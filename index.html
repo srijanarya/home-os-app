@@ -427,7 +427,11 @@ function findCategoryByName(state, name, subName) {
   }
   return top;
 }
-function isAdmin(state) { return (state.admins || DEFAULT_ADMINS).includes(whoAmI()); }
+function isAdmin(state) {
+  const me = whoAmI().trim().toLowerCase();
+  if (!me) return false;
+  return (state.admins || DEFAULT_ADMINS).some(a => String(a).trim().toLowerCase() === me);
+}
 /* legacy v2.0 category ids → v2.1 tree */
 function migrateCategories(state) {
   let changed = 0;
@@ -529,6 +533,19 @@ function buildDigestLines(state, now = new Date()) {
     .filter(it => (isTrackedItem(state, it) && dailyConsumption(it) > 0 && isTriggered(it, now)) || decisions[it.id])
     .map(it => ({ item: it, qty: proposedQty(it, now), laneInfo: computeLane(it, now), decision: decisions[it.id] || null }))
     .sort((a, b) => daysRemaining(a.item, now) - daysRemaining(b.item, now));
+}
+
+/* ---------- order tracking ---------- */
+function buildOnItsWay(state) {
+  return state.log.filter(e => e.status === 'ordered');
+}
+function markReceived(state, logId, now = new Date()) {
+  const e = state.log.find(l => l.id === logId);
+  if (!e || e.status !== 'ordered') return;
+  e.status = 'received';
+  e.received_date = todayKey(now);
+  saveCache(state);
+  queueWrite(state, 'log', e); // appendLog upserts by id, so this updates in place
 }
 
 /* ---------- basket ---------- */
@@ -767,6 +784,7 @@ function markOrdered(state, vendor, now = new Date()) {
       qty: l.qty, unit: it.unit, vendor: it.vendor, price: Number(it.price) || 0,
       payment_owner: whoAmI() || it.payment_owner, payment_mode: it.payment_mode,
       by: whoAmI() || '',
+      status: 'ordered', // → 'received' when someone taps Arrived; P3 Gmail scouting automates this
       reason: (it.status === 'trial' ? 'trial first order' : (isFinite(days) ? Math.floor(days) + ' days left' : 'manual') + ', lead ' + (it.vendor_lead_time_days || 0) + 'd + buffer ' + (it.buffer_days || 0) + 'd')
     };
     state.log.unshift(entry);
@@ -969,7 +987,7 @@ function render(state) {
   document.getElementById('pageTitle').textContent = titles[currentTab];
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
   const banners = renderBanners(state);
-  if (currentTab === 'digest') view.innerHTML = banners + renderBasketSection(state) + renderDigestView(state);
+  if (currentTab === 'digest') view.innerHTML = banners + renderBasketSection(state) + renderOnItsWay(state) + renderDigestView(state);
   else if (currentTab === 'items') view.innerHTML = banners + renderItemsView(state);
   else view.innerHTML = banners + renderLogView(state);
   const pending = buildDigestLines(state).filter(l => !l.decision && l.laneInfo.lane !== 'STOP').length;
@@ -1016,6 +1034,18 @@ function renderBasketSection(state) {
   return '<div class="basket"><h2>🧺 Today’s order basket</h2>' +
     '<p class="b-sub">Send each list to its vendor (or whoever’s ordering), then tap “Mark ordered” so stock and the log update.</p>' +
     cards + '</div>';
+}
+function renderOnItsWay(state) {
+  const pending = buildOnItsWay(state);
+  if (!pending.length) return '';
+  const rows = pending.map(e =>
+    '<div class="row" style="padding:5px 0;border-bottom:1px dashed var(--line);">' +
+    '<span style="font-size:14.5px;">' + esc(e.item_name) + ' — ' + e.qty + esc(e.unit) + ' from ' + esc(e.vendor) + ' <span class="sub">(ordered ' + esc(e.date) + ')</span></span>' +
+    '<button class="btn ghost small" data-action="log-received" data-id="' + esc(e.id) + '">Arrived ✓</button>' +
+    '</div>').join('');
+  return '<div class="card" style="border-left:3px solid var(--amber);">' +
+    '<h3 style="margin-bottom:6px;">🚚 On its way</h3>' + rows +
+    '<p class="why">Tap “Arrived” when a delivery lands — the Log keeps the record straight.</p></div>';
 }
 function renderDigestView(state) {
   const lines = buildDigestLines(state);
@@ -1118,10 +1148,11 @@ function renderItemsView(state) {
       '</div>'
     : '';
 
-  const adminBtns = isAdmin(state)
-    ? '<button class="btn ghost" data-action="manage-categories">Categories</button>' +
-      '<button class="btn ghost" data-action="csv-open">Import CSV</button>'
-    : '';
+  // always visible — hidden admin features read as missing features; non-admins
+  // get told who to ask instead
+  const adminBtns =
+    '<button class="btn ghost" data-action="manage-categories">Categories</button>' +
+    '<button class="btn ghost" data-action="csv-open">Import CSV</button>';
   return '<div class="actions" style="margin:0 0 6px;">' +
     '<button class="btn" data-action="quick-add">+ Add item</button>' +
     '<button class="btn ghost" data-action="trial-add">Try something new</button>' +
@@ -1133,10 +1164,14 @@ function renderItemsView(state) {
 }
 function renderLogView(state) {
   if (!state.log.length) return '<div class="empty">No orders yet. When a basket is marked ordered, it lands here — what, from where, why, at what price, and who ordered.</div>';
+  const arrivedCell = e =>
+    e.status === 'ordered' ? '<button class="btn ghost small" data-action="log-received" data-id="' + esc(e.id) + '">Arrived ✓</button>'
+    : e.status === 'received' ? '<span class="chip ok">✓ ' + esc(e.received_date || '') + '</span>'
+    : '—'; // entries from before tracking existed
   const rows = state.log.map(e =>
-    '<tr><td>' + esc(e.date) + '</td><td>' + esc(e.item_name) + '</td><td>' + e.qty + esc(e.unit) + '</td><td>' + esc(e.vendor) + '</td><td>₹' + esc(e.price) + '</td><td>' + esc(e.payment_owner) + ' · ' + esc(e.payment_mode) + '</td><td>' + esc(e.by || '') + '</td><td>' + esc(e.reason) + '</td></tr>'
+    '<tr><td>' + esc(e.date) + '</td><td>' + esc(e.item_name) + '</td><td>' + e.qty + esc(e.unit) + '</td><td>' + esc(e.vendor) + '</td><td>₹' + esc(e.price) + '</td><td>' + esc(e.payment_owner) + ' · ' + esc(e.payment_mode) + '</td><td>' + esc(e.by || '') + '</td><td>' + arrivedCell(e) + '</td><td>' + esc(e.reason) + '</td></tr>'
   ).join('');
-  return '<div class="tablewrap"><table><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>From</th><th>Price</th><th>Paid by</th><th>By</th><th>Why</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div class="tablewrap"><table><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>From</th><th>Price</th><th>Paid by</th><th>By</th><th>Arrived</th><th>Why</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
 }
 function renderFooter(state) {
   const share = (mode !== 'local' && householdId)
@@ -1337,6 +1372,7 @@ document.addEventListener('click', (ev) => {
       break;
     }
     case 'mark-ordered': markOrdered(state, btn.dataset.vendor); render(state); break;
+    case 'log-received': markReceived(state, id); render(state); break;
     case 'quick-add': {
       document.getElementById('quickForm').reset();
       document.getElementById('q-category').innerHTML = catOptionsHTML(state, 'grains-legumes-pulses');
@@ -1376,8 +1412,18 @@ document.addEventListener('click', (ev) => {
     }
     case 'stock-skip': stockQueue.shift(); renderStockStep(state); break;
     case 'stock-close': document.getElementById('stockDialog').close(); render(state); break;
-    case 'manage-categories': openCatDialog(state); break;
+    case 'manage-categories': {
+      if (!isAdmin(state)) {
+        alert('Categories are managed by ' + (state.admins || DEFAULT_ADMINS).join(' & ') + ' so the list stays tidy.\n\nAsk them to add one — or, if that’s you, tap “change” next to your name at the top and pick your own name.');
+        break;
+      }
+      openCatDialog(state); break;
+    }
     case 'csv-open': {
+      if (!isAdmin(state)) {
+        alert('Importing the data sheet is done by ' + (state.admins || DEFAULT_ADMINS).join(' & ') + '.\n\nIf that’s you, tap “change” next to your name at the top and pick your own name.');
+        break;
+      }
       document.getElementById('csvResult').textContent = '';
       document.getElementById('csvDialog').showModal(); break;
     }
@@ -1517,6 +1563,15 @@ function runSelfTest() {
   ok('markOrdered writes full log entry', st.log.length === 1 && st.log[0].qty === 500 && st.log[0].payment_mode === 'UPI' && st.log[0].price === 450);
   ok('markOrdered bumps stock + re-anchors', st.items[0].current_stock === 600 && st.items[0].stock_updated_at === t);
   ok('decision now ordered', st.digest_decisions[t][it2.id].action === 'ordered');
+  ok('order is tracked as on-its-way', st.log[0].status === 'ordered' && buildOnItsWay(st).length === 1);
+  markReceived(st, st.log[0].id);
+  ok('arrived clears tracking + stamps date', st.log[0].status === 'received' && st.log[0].received_date === t && buildOnItsWay(st).length === 0);
+  const prevWho = whoAmI();
+  setWho('  sRiJaN ');
+  ok('admin match is case/space-insensitive', isAdmin(testState()) === true);
+  setWho('Nobody Special');
+  ok('non-admin still gated', isAdmin(testState()) === false);
+  setWho(prevWho || '');
   /* v2.1: categories */
   const st3 = testState();
   const legacy = Object.assign(base(), { id: uid(), category: 'food-staples' });
