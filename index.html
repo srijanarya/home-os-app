@@ -282,8 +282,8 @@
    graceful local-only mode when unconfigured/offline. All qty math in raw units. */
 
 /* ---- wire these at deploy; empty = local-only mode ---- */
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
+const SUPABASE_URL = 'https://ozdjkukmcphdfelpsiky.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZGprdWttY3BoZGZlbHBzaWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDA2NTksImV4cCI6MjA5ODkxNjY1OX0.Akk16SQd1oJrb5CShS1L0MA_wxt3IrorzOgiSHeS3KA';
 
 const CACHE_KEY = 'homeOS_v2';
 const V1_KEY = 'homeOS_v1';
@@ -429,11 +429,13 @@ let mode = 'local';        // 'shared' | 'offline' | 'local'
 let householdId = null;
 function dbConfigured() { return !!(SUPABASE_URL && SUPABASE_ANON_KEY); }
 function dbHeaders(extra) {
-  return Object.assign({
+  const h = {
     'apikey': SUPABASE_ANON_KEY,
     'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
     'Content-Type': 'application/json'
-  }, extra || {});
+  };
+  if (householdId) h['x-household-id'] = householdId; // RLS scopes every row to this
+  return Object.assign(h, extra || {});
 }
 async function dbReq(path, opts) {
   const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({ headers: dbHeaders(opts && opts.prefer ? { 'Prefer': opts.prefer } : {}) }, opts));
@@ -442,7 +444,7 @@ async function dbReq(path, opts) {
   return text ? JSON.parse(text) : null;
 }
 const db = {
-  createHousehold: (name) => dbReq('households', { method: 'POST', body: JSON.stringify({ name }), prefer: 'return=representation' }).then(r => r[0]),
+  createHousehold: (id, name) => dbReq('households', { method: 'POST', body: JSON.stringify({ id, name }), prefer: 'return=representation' }).then(r => r[0]),
   fetchAll: async (hh) => {
     const [items, log, decisions] = await Promise.all([
       dbReq('items?household_id=eq.' + hh + '&select=id,data'),
@@ -870,13 +872,13 @@ async function boot() {
 }
 async function createHousehold(state) {
   try {
-    const hh = await db.createHousehold('Home');
-    householdId = hh.id;
-    state.household = hh.id;
+    householdId = uid(); // client-generated so the x-household-id header carries it on create
+    await db.createHousehold(householdId, 'Home');
+    state.household = householdId;
     if (!state.items.length) state.items = seedItems();
     mode = 'shared';
     bootScreen = null;
-    location.hash = '#h=' + hh.id;
+    location.hash = '#h=' + householdId;
     saveCache(state);
     state.items.forEach(it => queueWrite(state, 'item', it));
     if (!whoAmI()) openWhoDialog();
@@ -993,27 +995,31 @@ document.getElementById('quickForm').addEventListener('submit', (ev) => {
   quickAdd(state, { item: form.elements.item.value, vendor: form.elements.vendor.value, pack: form.elements.pack.value, unit: form.elements.unit.value, daily: form.elements.daily.value });
   render(state);
 });
-/* re-sync when the family comes back to the tab, and when the link (household) changes */
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && mode !== 'local') {
-    flushOutbox(state);
-    if (dbConfigured() && householdId) {
-      db.fetchAll(householdId).then(remote => {
-        // remote wins for anything we don't have queued locally (outbox items re-apply after)
-        state.items = remote.items; state.log = remote.log; state.digest_decisions = remote.digest_decisions;
-        mode = 'shared'; saveCache(state); render(state);
-        flushOutbox(state);
-      }).catch(() => { mode = 'offline'; render(state); });
-    }
-  }
+/* re-sync when the family comes back to the tab */
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || mode === 'local') return;
+  if (!dbConfigured() || !householdId) return;
+  await flushOutbox(state);              // push our pending writes first
+  if (state.outbox.length) return;       // still unsynced (offline) — don't let a fetch clobber them
+  try {
+    const remote = await db.fetchAll(householdId);
+    state.items = remote.items; state.log = remote.log; state.digest_decisions = remote.digest_decisions;
+    mode = 'shared'; saveCache(state); render(state);
+  } catch (e) { mode = 'offline'; render(state); }
 });
-window.addEventListener('hashchange', () => { bootScreen = null; boot(); });
+/* only re-boot when the household link actually changes to a different one (not our own set) */
+window.addEventListener('hashchange', () => {
+  const h = parseHousehold();
+  if (h && h === householdId) return;
+  bootScreen = null; boot();
+});
 
 boot();
 
 /* ---------- self-check (open with #selftest) ---------- */
 function runSelfTest() {
   const t = todayKey();
+  const savedMode = mode; mode = 'local'; // hermetic: no network writes during the checks
   const base = () => blankItem({ item: 'T', vendor: 'Zama Organics', known_good_source: 'B', qty_per_person_per_day: 10, people_served: 5, current_stock: 350,
     storage_ceiling: 1000, usual_order_qty: 500, unit_size: 500, price: 450, price_ceiling: 550, reserve_units: 1, payment_mode: 'UPI', payment_owner: 'R' });
   const results = [];
@@ -1060,6 +1066,7 @@ function runSelfTest() {
   ok('quick add derives fields', qa.usual_order_qty === 250 && qa.storage_ceiling === 500 && dailyConsumption(qa) === 25);
   /* outbox stays empty in local mode */
   ok('local mode queues nothing', st2.outbox.length === 0);
+  mode = savedMode; // restore live mode
   const failed = results.filter(r => r.startsWith('FAIL'));
   console.log('Home OS v2 self-test:\n' + results.join('\n'));
   alert('Self-test: ' + (results.length - failed.length) + '/' + results.length + ' passed' + (failed.length ? '\n' + failed.join('\n') : ''));
