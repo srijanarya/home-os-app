@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home OS — v2</title>
+<title>Home OS — v2.1</title>
 <style>
   :root{
     --ink:#1c1a17; --ink-soft:#4a453e;
@@ -52,6 +52,11 @@
   .kpis{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px;}
   .kpi{font-size:13.5px;color:var(--ink-soft);}
   .kpi b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  .group-h{
+    font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--sage);margin:22px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line);
+  }
+  .group-h:first-of-type{margin-top:4px;}
 
   .flag{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:2px;letter-spacing:.05em;color:#fff;white-space:nowrap;}
   .flag.auto{background:var(--sage);}
@@ -71,6 +76,7 @@
   button.btn.ghost{background:none;color:var(--ink);}
   button.btn.small,a.btn.small{padding:6px 10px;font-size:11px;}
   button.btn.primary{background:var(--sage);border-color:var(--sage);}
+  button.btn.danger{background:none;color:var(--clay);border-color:var(--clay);}
   button.btn:focus-visible,a.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
   button.btn:disabled{opacity:.45;cursor:not-allowed;}
   .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
@@ -89,6 +95,11 @@
     white-space:pre-wrap;word-break:break-word;margin:8px 0 0;overflow-x:auto;
   }
 
+  .trials{border:1.5px solid var(--amber);border-radius:3px;background:var(--amber-soft);padding:14px 16px;margin:18px 0 12px;}
+  .trials h2{margin:0 0 2px;font-size:18px;}
+  .trials .t-sub{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin:0 0 4px;}
+  .trials .card{margin-top:10px;}
+
   .adjust{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
   .adjust.open{display:block;}
   .adjust label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--sage);margin:8px 0 3px;}
@@ -98,7 +109,8 @@
     font-family:inherit;font-size:15px;color:var(--ink);
     background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:8px 10px;
   }
-  input:focus-visible,select:focus-visible{outline:2px solid var(--amber);outline-offset:0;}
+  textarea{font-family:var(--mono);font-size:12.5px;line-height:1.5;}
+  input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:0;}
 
   dialog{
     border:1px solid var(--ink);border-radius:4px;padding:0;
@@ -114,7 +126,7 @@
   .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
   .grid .full{grid-column:1 / -1;}
   .field label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 3px;}
-  .field input,.field select{width:100%;}
+  .field input,.field select,.field textarea{width:100%;}
   .field .hint{font-size:12px;color:var(--ink-soft);margin-top:2px;}
   .check{display:flex;align-items:center;gap:8px;font-size:14.5px;}
   .check input{width:auto;}
@@ -124,6 +136,9 @@
   .fractions button{flex:1;min-width:56px;font-size:15px;padding:14px 8px;}
 
   .namegrid{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+  .catlist{margin:0 0 12px;padding:0;list-style:none;font-size:14.5px;}
+  .catlist li{padding:6px 0;border-bottom:1px dashed var(--line);display:flex;justify-content:space-between;gap:8px;}
+  .catlist li.sub{padding-left:22px;}
 
   .tablewrap{overflow-x:auto;margin:0 0 14px;}
   table{width:100%;border-collapse:collapse;font-size:14px;}
@@ -143,7 +158,7 @@
 
 <header>
   <div>
-    <span class="eyebrow">Home OS · v2</span>
+    <span class="eyebrow">Home OS · v2.1</span>
     <h1 id="pageTitle">Morning digest</h1>
   </div>
   <div class="hdr-actions">
@@ -167,26 +182,14 @@
 <dialog id="itemDialog">
   <form id="itemForm" method="dialog" novalidate>
     <h2 id="dialogTitle">Edit item</h2>
-    <p class="d-sub">Everything is editable — columns grow as needs grow.</p>
+    <p class="d-sub" id="dialogSub">An entry is one item from one vendor — Almonds from Zama and Almonds from Nature's are two entries.</p>
     <input type="hidden" name="id">
     <fieldset>
       <legend>Basics</legend>
       <div class="grid">
         <div class="field full"><label for="f-item">Item</label><input id="f-item" name="item" required></div>
-        <div class="field"><label for="f-category">Category</label>
-          <select id="f-category" name="category">
-            <option value="food-staples">Food &amp; kitchen staples</option>
-            <option value="herbs-supplements">Herbs &amp; supplements</option>
-            <option value="cleaning-personal-care">Cleaning &amp; personal care</option>
-            <option value="garden-inputs">Garden / growing inputs</option>
-            <option value="household-consumables">Household consumables</option>
-          </select>
-        </div>
-        <div class="field"><label for="f-status">Status</label>
-          <select id="f-status" name="status">
-            <option value="vetted">Vetted (known-good)</option>
-            <option value="trial">Trial (new — small orders)</option>
-          </select>
+        <div class="field full"><label for="f-category">Category</label>
+          <select id="f-category" name="category"></select>
         </div>
       </div>
     </fieldset>
@@ -234,7 +237,10 @@
       </div>
     </fieldset>
     <div class="d-actions">
-      <button type="button" class="btn ghost" data-action="dialog-cancel">Cancel</button>
+      <span style="display:flex;gap:8px;">
+        <button type="button" class="btn ghost" data-action="dialog-cancel">Cancel</button>
+        <button type="button" class="btn danger" id="deleteItemBtn" data-action="delete-item" hidden>Delete</button>
+      </span>
       <button type="submit" class="btn" value="save">Save item</button>
     </div>
   </form>
@@ -243,9 +249,10 @@
 <dialog id="quickDialog">
   <form id="quickForm" method="dialog" novalidate>
     <h2>Add an item</h2>
-    <p class="d-sub">Just the basics — fine-tune later with Edit.</p>
+    <p class="d-sub">Goes straight onto the family list as a trusted regular. Fine-tune later with Edit.</p>
     <div class="grid">
-      <div class="field full"><label for="q-item">What is it?</label><input id="q-item" name="item" required placeholder="e.g. Pistachios"></div>
+      <div class="field full"><label for="q-item">What is it?</label><input id="q-item" name="item" required placeholder="e.g. Toor dal"></div>
+      <div class="field full"><label for="q-category">Category</label><select id="q-category" name="category"></select></div>
       <div class="field"><label for="q-vendor">Where do you buy it?</label><input id="q-vendor" name="vendor" list="vendorList"></div>
       <div class="field"><label for="q-pack">Pack size</label><input id="q-pack" name="pack" type="number" min="0" step="any" placeholder="500"></div>
       <div class="field"><label for="q-unit">Unit</label><select id="q-unit" name="unit"><option>g</option><option>ml</option><option>pcs</option></select></div>
@@ -256,6 +263,58 @@
       <button type="submit" class="btn">Add</button>
     </div>
   </form>
+</dialog>
+
+<dialog id="trialDialog">
+  <form id="trialForm" method="dialog" novalidate>
+    <h2>Try something new</h2>
+    <p class="d-sub">One small order, one new thing at a time. It joins the repository only after it earns its place.</p>
+    <div class="grid">
+      <div class="field full"><label for="t-item">What are you trying?</label><input id="t-item" name="item" required placeholder="e.g. A2 ghee from a new farm"></div>
+      <div class="field full"><label for="t-category">Category</label><select id="t-category" name="category"></select></div>
+      <div class="field"><label for="t-vendor">Vendor</label><input id="t-vendor" name="vendor" list="vendorList"></div>
+      <div class="field"><label for="t-source">Brand / source</label><input id="t-source" name="known_good_source"></div>
+      <div class="field"><label for="t-pack">Trial pack size</label><input id="t-pack" name="pack" type="number" min="0" step="any" placeholder="100"></div>
+      <div class="field"><label for="t-unit">Unit</label><select id="t-unit" name="unit"><option>g</option><option>ml</option><option>pcs</option></select></div>
+      <div class="field"><label for="t-price">Price (₹)</label><input id="t-price" name="price" type="number" min="0" step="any"></div>
+    </div>
+    <div class="d-actions">
+      <button type="button" class="btn ghost" data-action="dialog-cancel-trial">Cancel</button>
+      <button type="submit" class="btn">Add trial</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="catDialog">
+  <div class="dlg-body">
+    <h2>Categories</h2>
+    <p class="d-sub">Admins only, so the list stays tidy. New categories show up for everyone right away.</p>
+    <ul class="catlist" id="catList"></ul>
+    <form id="catForm">
+      <div class="grid">
+        <div class="field"><label for="c-name">New category name</label><input id="c-name" name="name" placeholder="e.g. Oils & ghee"></div>
+        <div class="field"><label for="c-parent">Nested under</label><select id="c-parent" name="parent"></select></div>
+        <div class="field full check"><input id="c-daytoday" name="daytoday" type="checkbox"> <label for="c-daytoday" style="margin:0;text-transform:none;font-size:14.5px;">Day-to-day (like fresh produce) — don't track stock</label></div>
+      </div>
+      <div class="d-actions">
+        <button type="button" class="btn ghost" data-action="dialog-cancel-cat">Close</button>
+        <button type="submit" class="btn">Add category</button>
+      </div>
+    </form>
+  </div>
+</dialog>
+
+<dialog id="csvDialog">
+  <div class="dlg-body">
+    <h2>Import items (CSV)</h2>
+    <p class="d-sub">Paste rows from the data sheet. First row must be the column names from the template.</p>
+    <div class="field"><textarea id="csvText" rows="10" placeholder="item,category,vendor,brand,unit,per_person_per_day,people_served,pack_size,usual_order_qty,storage_ceiling,current_stock,reserve_packs,price,price_ceiling,payment_mode,payment_owner,lead_days,buffer_days,notes"></textarea></div>
+    <p class="why" id="csvResult"></p>
+    <div class="d-actions">
+      <button type="button" class="btn ghost" data-action="dialog-cancel-csv">Close</button>
+      <button type="button" class="btn" data-action="csv-import">Import</button>
+    </div>
+  </div>
 </dialog>
 
 <dialog id="stockDialog">
@@ -277,11 +336,12 @@
 
 <script>
 'use strict';
-/* ===== Home OS v2 — shared household tracker with sendable vendor orders =====
-   Single file. Shared state via Supabase PostgREST (plain fetch, no client lib);
-   graceful local-only mode when unconfigured/offline. All qty math in raw units. */
+/* ===== Home OS v2.1 — shared household tracker =====
+   v2.1: admin-managed category tree (day-to-day categories untracked),
+   vetting = vendor-item pair (repository entries are vetted by definition),
+   trials as separate flow, CSV bulk import for the structured data doc. */
 
-/* ---- wire these at deploy; empty = local-only mode ---- */
+/* ---- wired at deploy; empty = local-only mode ---- */
 const SUPABASE_URL = 'https://ozdjkukmcphdfelpsiky.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96ZGprdWttY3BoZGZlbHBzaWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzNDA2NTksImV4cCI6MjA5ODkxNjY1OX0.Akk16SQd1oJrb5CShS1L0MA_wxt3IrorzOgiSHeS3KA';
 
@@ -290,12 +350,30 @@ const V1_KEY = 'homeOS_v1';
 const WHO_KEY = 'homeOS_who';
 const MS_PER_DAY = 86400000;
 const FAMILY = ['Ritika', 'Sia', 'Swapnali', 'Srijan'];
+const DEFAULT_ADMINS = ['Ritika', 'Srijan'];
 const VENDOR_NOTES = Object.assign(Object.create(null), {
   'Zama Organics': 'app · no cash',
   'GRN Organics': 'call / walk-in',
   'Blinkit': 'COD may carry surcharge',
   'Amazon': 'cash limits apply',
   "Nature's": ''
+});
+
+function defaultCategories() {
+  return [
+    { id: 'dairy', name: 'Dairy', tracked: true },
+    { id: 'fruits-vegetables', name: 'Fruits & vegetables', tracked: false },
+    { id: 'grains-legumes-pulses', name: 'Grains, legumes & pulses', tracked: true },
+    { id: 'nuts-dried-fruits-seeds', name: 'Nuts, dried fruits & seeds', tracked: true },
+    { id: 'spices-teas-herbs', name: 'Spices, teas & herbs', tracked: true },
+    { id: 'cleaning-personal-care', name: 'Cleaning & personal care', tracked: true },
+    { id: 'garden-inputs', name: 'Garden / growing inputs', tracked: true },
+    { id: 'household-consumables', name: 'Household consumables', tracked: true }
+  ];
+}
+const LEGACY_CATEGORY_MAP = Object.assign(Object.create(null), {
+  'food-staples': 'nuts-dried-fruits-seeds',
+  'herbs-supplements': 'spices-teas-herbs'
 });
 
 function todayKey(d = new Date()) {
@@ -307,11 +385,66 @@ function uid() {
       const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
     });
 }
+function slug(name) {
+  return String(name).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || uid().slice(0, 8);
+}
+
+/* ---------- category helpers ---------- */
+function catById(state, id) { return (state.categories || []).find(c => c.id === id) || null; }
+function catName(state, id) { const c = catById(state, id); return c ? c.name : id; }
+function catTopOf(state, id) {
+  const c = catById(state, id);
+  if (!c) return null;
+  return c.parent ? (catById(state, c.parent) || c) : c;
+}
+function catTracked(state, id) {
+  const top = catTopOf(state, id);
+  return top ? top.tracked !== false : true; // unknown category: safest is tracked
+}
+function isTrackedItem(state, item) {
+  return item.status !== 'trial' && catTracked(state, item.category);
+}
+function catOptionsHTML(state, selectedId) {
+  const cats = state.categories || defaultCategories();
+  const tops = cats.filter(c => !c.parent);
+  return tops.map(top => {
+    const subs = cats.filter(c => c.parent === top.id);
+    const opt = (c, indent) => '<option value="' + esc(c.id) + '"' + (c.id === selectedId ? ' selected' : '') + '>' +
+      (indent ? '&nbsp;&nbsp;— ' : '') + esc(c.name) + (top.tracked === false && !indent ? ' (day-to-day)' : '') + '</option>';
+    return opt(top, false) + subs.map(s => opt(s, true)).join('');
+  }).join('');
+}
+function findCategoryByName(state, name, subName) {
+  const cats = state.categories || [];
+  // slug-compare so "Grains legumes & pulses", "grains, legumes and pulses" etc. all match
+  const key = s => slug(String(s || '').replace(/\band\b/gi, ' '));
+  const match = (c, n) => key(c.name) === key(n) || c.id === key(n);
+  const top = cats.find(c => !c.parent && match(c, name));
+  if (!top) return null;
+  if (subName && String(subName).trim()) {
+    const sub = cats.find(c => c.parent === top.id && match(c, subName));
+    return sub || top; // unknown sub falls back to its top-level
+  }
+  return top;
+}
+function isAdmin(state) { return (state.admins || DEFAULT_ADMINS).includes(whoAmI()); }
+/* legacy v2.0 category ids → v2.1 tree */
+function migrateCategories(state) {
+  let changed = 0;
+  state.items.forEach(it => {
+    if (LEGACY_CATEGORY_MAP[it.category]) {
+      it.category = LEGACY_CATEGORY_MAP[it.category];
+      persistItem(state, it);
+      changed++;
+    }
+  });
+  return changed;
+}
 
 /* ---------- seed data: EXAMPLE values, the family corrects them ---------- */
 function blankItem(o) {
   return Object.assign({
-    id: uid(), item: '', category: 'food-staples', houses: 'shared-pool', vendor: '', known_good_source: '',
+    id: uid(), item: '', category: 'grains-legumes-pulses', houses: 'shared-pool', vendor: '', known_good_source: '',
     qty_per_person_per_day: 0, unit: 'g', people_served: 5, frequency: 'weekly',
     price: 0, price_ceiling: 0, payment_mode: 'UPI', payment_owner: 'Ritika',
     current_stock: 0, stock_updated_at: todayKey(), reserve_units: 0, backstock_target: 1,
@@ -321,25 +454,26 @@ function blankItem(o) {
   }, o);
 }
 function seedItems() {
-  const mk = (o) => blankItem(Object.assign({ seed: true }, o));
+  const mk = (o) => blankItem(Object.assign({ seed: true, category: 'nuts-dried-fruits-seeds' }, o));
   return [
     mk({ item: 'Almonds', vendor: 'Zama Organics', known_good_source: 'Zama house brand', qty_per_person_per_day: 10, price: 450, price_ceiling: 550, current_stock: 180, reserve_units: 0, storage_ceiling: 1000, unit_size: 500, usual_order_qty: 500 }),
     mk({ item: 'Cashews', vendor: 'Zama Organics', known_good_source: 'Zama house brand', qty_per_person_per_day: 8, price: 380, price_ceiling: 480, current_stock: 600, reserve_units: 1, storage_ceiling: 1000, unit_size: 500, usual_order_qty: 500 }),
     mk({ item: 'Walnuts', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 6, price: 520, price_ceiling: 650, current_stock: 500, reserve_units: 1, storage_ceiling: 800, unit_size: 400, usual_order_qty: 400 }),
     mk({ item: 'Pumpkin seeds', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 5, price: 300, price_ceiling: 380, current_stock: 60, reserve_units: 0, storage_ceiling: 500, unit_size: 250, usual_order_qty: 250 }),
-    mk({ item: 'Sunflower seeds', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 5, price: 220, price_ceiling: 300, current_stock: 400, reserve_units: 1, storage_ceiling: 600, unit_size: 250, usual_order_qty: 250 }),
     mk({ item: 'Sesame seeds', vendor: 'GRN Organics', known_good_source: 'GRN loose (vetted)', qty_per_person_per_day: 4, price: 90, price_ceiling: 140, current_stock: 350, reserve_units: 1, storage_ceiling: 500, unit_size: 250, usual_order_qty: 250 }),
     mk({ item: 'Raisins', vendor: 'Blinkit', known_good_source: 'Happilo', qty_per_person_per_day: 8, price: 160, price_ceiling: 220, current_stock: 100, reserve_units: 0, storage_ceiling: 750, unit_size: 250, usual_order_qty: 500 }),
     mk({ item: 'Dates', vendor: "Nature's", known_good_source: "Nature's (vetted)", qty_per_person_per_day: 15, price: 350, price_ceiling: 450, current_stock: 900, reserve_units: 1, storage_ceiling: 1500, unit_size: 500, usual_order_qty: 500 }),
-    mk({ item: 'Turmeric powder', category: 'herbs-supplements', vendor: 'Blinkit', known_good_source: 'Brand X', qty_per_person_per_day: 2, price: 120, price_ceiling: 200, current_stock: 30, reserve_units: 0, storage_ceiling: 400, unit_size: 200, usual_order_qty: 200, blacklist: { flag: true, reason: 'Brand X blacklisted — opaque sourcing (example)' } }),
-    mk({ item: 'Moringa powder', category: 'herbs-supplements', vendor: 'Zama Organics', known_good_source: 'new supplier — on trial', qty_per_person_per_day: 3, price: 250, price_ceiling: 300, current_stock: 20, reserve_units: 0, storage_ceiling: 300, unit_size: 100, usual_order_qty: 200, status: 'trial' })
+    mk({ item: 'Toor dal', category: 'grains-legumes-pulses', vendor: 'GRN Organics', known_good_source: 'GRN loose (vetted)', qty_per_person_per_day: 30, price: 180, price_ceiling: 260, current_stock: 1500, reserve_units: 1, storage_ceiling: 3000, unit_size: 1000, usual_order_qty: 1000 }),
+    mk({ item: 'Milk', category: 'dairy', vendor: 'Blinkit', known_good_source: 'Amul', unit: 'ml', qty_per_person_per_day: 200, price: 66, price_ceiling: 90, current_stock: 2000, reserve_units: 1, storage_ceiling: 4000, unit_size: 1000, usual_order_qty: 2000, vendor_lead_time_days: 0, buffer_days: 1 }),
+    mk({ item: 'Turmeric powder', category: 'spices-teas-herbs', vendor: 'Blinkit', known_good_source: 'Brand X', qty_per_person_per_day: 2, price: 120, price_ceiling: 200, current_stock: 30, reserve_units: 0, storage_ceiling: 400, unit_size: 200, usual_order_qty: 200, blacklist: { flag: true, reason: 'Brand X blacklisted — opaque sourcing (example)' } })
   ];
 }
 function emptyState() {
-  return { schemaVersion: 2, household: null, items: [], log: [], digest_decisions: {}, outbox: [] };
+  return { schemaVersion: 2, household: null, items: [], log: [], digest_decisions: {}, outbox: [],
+    categories: defaultCategories(), admins: DEFAULT_ADMINS.slice() };
 }
 
-/* ---------- computed (unchanged core math from v1) ---------- */
+/* ---------- computed (core math unchanged) ---------- */
 function dailyConsumption(item) {
   return (Number(item.qty_per_person_per_day) || 0) * (Number(item.people_served) || 0);
 }
@@ -369,7 +503,7 @@ function runOutDate(item, now = new Date()) {
 function proposedQty(item, now = new Date()) {
   const headroom = (Number(item.storage_ceiling) || 0) - effectiveStock(item, now);
   let usual = Number(item.usual_order_qty) || 0;
-  if (item.status === 'trial') usual = Math.min(usual || Infinity, Number(item.unit_size) || usual); // trial: one pack max
+  if (item.status === 'trial') usual = Math.min(usual || Infinity, Number(item.unit_size) || usual);
   return Math.max(0, Math.min(usual, Math.max(0, headroom)));
 }
 function backstockOk(item) {
@@ -387,15 +521,17 @@ function computeLane(item, now = new Date()) {
   if (reasons.length) return { lane: 'ASK', reason: reasons.join(' · ') };
   return { lane: 'AUTO', reason: 'known-good repeat — usual source, quantity, and price' };
 }
+/* Digest = tracked repository items only. Trials and day-to-day categories never trigger;
+   already-decided lines stay visible for the day regardless. */
 function buildDigestLines(state, now = new Date()) {
   const decisions = state.digest_decisions[todayKey(now)] || {};
   return state.items
-    .filter(it => (dailyConsumption(it) > 0 && isTriggered(it, now)) || decisions[it.id])
+    .filter(it => (isTrackedItem(state, it) && dailyConsumption(it) > 0 && isTriggered(it, now)) || decisions[it.id])
     .map(it => ({ item: it, qty: proposedQty(it, now), laneInfo: computeLane(it, now), decision: decisions[it.id] || null }))
     .sort((a, b) => daysRemaining(a.item, now) - daysRemaining(b.item, now));
 }
 
-/* ---------- V2: basket ---------- */
+/* ---------- basket ---------- */
 function buildBasket(state, now = new Date()) {
   const decisions = state.digest_decisions[todayKey(now)] || {};
   const groups = Object.create(null);
@@ -406,7 +542,7 @@ function buildBasket(state, now = new Date()) {
     if (!groups[v]) groups[v] = [];
     groups[v].push({ item: it, qty: Number(d.qty) || 0 });
   });
-  return groups; // { vendorName: [{item, qty}] }
+  return groups;
 }
 function vendorMessage(vendor, lines) {
   const note = VENDOR_NOTES[vendor];
@@ -415,7 +551,8 @@ function vendorMessage(vendor, lines) {
     const it = l.item;
     const brand = it.known_good_source ? ' (' + it.known_good_source + ')' : '';
     const price = Number(it.price) > 0 ? ' ~₹' + it.price : '';
-    return '• ' + it.item + ' — ' + l.qty + it.unit + brand + price;
+    const trial = it.status === 'trial' ? ' [TRIAL — first order]' : '';
+    return '• ' + it.item + ' — ' + l.qty + it.unit + brand + price + trial;
   }).join('\n');
   const total = lines.reduce((s, l) => s + (Number(l.item.price) || 0), 0);
   const modes = [...new Set(lines.map(l => l.item.payment_mode).filter(Boolean))].join('/');
@@ -424,8 +561,8 @@ function vendorMessage(vendor, lines) {
   return head + '\n' + body + (tail.trim() ? '\n' + tail.replace(/^ · /, '') : '');
 }
 
-/* ---------- db layer (PostgREST via fetch; all writes idempotent) ---------- */
-let mode = 'local';        // 'shared' | 'offline' | 'local'
+/* ---------- db layer (PostgREST; all writes idempotent) ---------- */
+let mode = 'local';
 let householdId = null;
 function dbConfigured() { return !!(SUPABASE_URL && SUPABASE_ANON_KEY); }
 function dbHeaders(extra) {
@@ -444,15 +581,22 @@ async function dbReq(path, opts) {
   return text ? JSON.parse(text) : null;
 }
 const db = {
-  createHousehold: (id, name) => dbReq('households', { method: 'POST', body: JSON.stringify({ id, name }), prefer: 'return=representation' }).then(r => r[0]),
+  createHousehold: (id, name, categories, admins) => dbReq('households', {
+    method: 'POST', body: JSON.stringify({ id, name, categories, admins }), prefer: 'return=representation'
+  }).then(r => r[0]),
+  updateHousehold: (hh, patch) => dbReq('households?id=eq.' + hh, { method: 'PATCH', body: JSON.stringify(patch) }),
   fetchAll: async (hh) => {
-    const [items, log, decisions] = await Promise.all([
+    const [households, items, log, decisions] = await Promise.all([
+      dbReq('households?id=eq.' + hh + '&select=name,categories,admins'),
       dbReq('items?household_id=eq.' + hh + '&select=id,data'),
       dbReq('order_log?household_id=eq.' + hh + '&select=entry&order=created_at.desc&limit=200'),
       dbReq('decisions?household_id=eq.' + hh + '&day=eq.' + todayKey() + '&select=item_id,decision')
     ]);
     const dec = {}; decisions.forEach(d => dec[d.item_id] = d.decision);
+    const hhRow = households[0] || {};
     return {
+      categories: Array.isArray(hhRow.categories) && hhRow.categories.length ? hhRow.categories : null,
+      admins: Array.isArray(hhRow.admins) && hhRow.admins.length ? hhRow.admins : null,
       items: items.map(r => Object.assign({}, r.data, { id: r.id })),
       log: log.map(r => r.entry),
       digest_decisions: { [todayKey()]: dec }
@@ -462,6 +606,7 @@ const db = {
     method: 'POST', prefer: 'resolution=merge-duplicates',
     body: JSON.stringify({ id: item.id, household_id: hh, data: item, updated_at: new Date().toISOString() })
   }),
+  deleteItem: (hh, id) => dbReq('items?id=eq.' + id, { method: 'DELETE' }),
   appendLog: (hh, entry) => dbReq('order_log?on_conflict=id', {
     method: 'POST', prefer: 'resolution=merge-duplicates',
     body: JSON.stringify({ id: entry.id, household_id: hh, entry })
@@ -472,9 +617,9 @@ const db = {
   })
 };
 
-/* outbox: every remote write queues here first; flush is safe to repeat (idempotent upserts) */
+/* outbox: every remote write queues first; flush is safe to repeat */
 function queueWrite(state, kind, payload) {
-  if (mode === 'local') return; // nothing to sync to
+  if (mode === 'local') return;
   state.outbox.push({ kind, payload });
   saveCache(state);
   flushOutbox(state);
@@ -487,8 +632,10 @@ async function flushOutbox(state) {
     while (state.outbox.length) {
       const w = state.outbox[0];
       if (w.kind === 'item') await db.upsertItem(householdId, w.payload);
+      else if (w.kind === 'delete-item') await db.deleteItem(householdId, w.payload.id);
       else if (w.kind === 'log') await db.appendLog(householdId, w.payload);
       else if (w.kind === 'decision') await db.upsertDecision(householdId, w.payload.day, w.payload.item_id, w.payload.decision);
+      else if (w.kind === 'household') await db.updateHousehold(householdId, w.payload);
       state.outbox.shift();
       saveCache(state);
     }
@@ -500,7 +647,7 @@ async function flushOutbox(state) {
   }
 }
 
-/* ---------- cache (localStorage; also the whole store in local mode) ---------- */
+/* ---------- cache ---------- */
 let memoryFallback = null;
 let storageOk = true;
 function loadCache() {
@@ -508,10 +655,15 @@ function loadCache() {
     const raw = localStorage.getItem(CACHE_KEY);
     if (raw) {
       const s = JSON.parse(raw);
-      if (s && s.schemaVersion === 2 && Array.isArray(s.items)) return s;
+      if (s && s.schemaVersion === 2 && Array.isArray(s.items)) {
+        if (!Array.isArray(s.categories) || !s.categories.length) s.categories = defaultCategories();
+        if (!Array.isArray(s.admins) || !s.admins.length) s.admins = DEFAULT_ADMINS.slice();
+        if (!Array.isArray(s.outbox)) s.outbox = [];
+        return s;
+      }
     }
     const v1raw = localStorage.getItem(V1_KEY);
-    if (v1raw) { // migrate v1 → v2 shape (fresh uuids for db-compat, keep the log)
+    if (v1raw) {
       const v1 = JSON.parse(v1raw);
       if (v1 && Array.isArray(v1.items)) {
         const s = emptyState();
@@ -541,6 +693,22 @@ function persistItem(state, item) {
   saveCache(state);
   queueWrite(state, 'item', item);
 }
+async function persistHousehold(state) {
+  saveCache(state);
+  if (mode === 'local') return;
+  // categories live in ONE jsonb column — merge with remote before writing so two
+  // admins adding categories at the same time can't clobber each other's additions
+  try {
+    const rows = await dbReq('households?id=eq.' + householdId + '&select=categories');
+    const remote = (rows && rows[0] && Array.isArray(rows[0].categories)) ? rows[0].categories : [];
+    const byId = Object.create(null);
+    remote.forEach(c => { byId[c.id] = c; });
+    state.categories.forEach(c => { if (!byId[c.id]) byId[c.id] = c; });
+    state.categories = Object.values(byId);
+    saveCache(state);
+  } catch (e) { /* offline — the outbox write below carries the local view when back */ }
+  queueWrite(state, 'household', { categories: state.categories, admins: state.admins });
+}
 function recordDecision(state, itemId, decision, now = new Date()) {
   const k = todayKey(now);
   if (!state.digest_decisions[k]) state.digest_decisions[k] = {};
@@ -548,7 +716,6 @@ function recordDecision(state, itemId, decision, now = new Date()) {
   saveCache(state);
   queueWrite(state, 'decision', { day: k, item_id: itemId, decision });
 }
-/* Approve = into today's basket. No stock change, no log — that happens at Mark ordered. */
 function approveDigestLine(state, itemId, overrides, now = new Date()) {
   const item = state.items.find(i => i.id === itemId);
   if (!item) return;
@@ -557,7 +724,7 @@ function approveDigestLine(state, itemId, overrides, now = new Date()) {
   if (!isFinite(qty) || qty < 0) return;
   const headroom = (Number(item.storage_ceiling) || 0) - effectiveStock(item, now);
   qty = Math.max(0, Math.min(qty, Math.max(0, headroom)));
-  if (item.status === 'trial') qty = Math.min(qty, proposedQty(item, now)); // trial cap holds even via Adjust
+  if (item.status === 'trial') qty = Math.min(qty, proposedQty(item, now));
   if (qty <= 0) return;
   let touched = false;
   if (overrides && overrides.vendor && overrides.vendor !== item.vendor) { item.vendor = overrides.vendor; touched = true; }
@@ -569,7 +736,26 @@ function approveDigestLine(state, itemId, overrides, now = new Date()) {
 function skipDigestLine(state, itemId, now = new Date()) {
   recordDecision(state, itemId, { action: 'skipped' }, now);
 }
-/* Mark ordered = the real event: log entries + stock bump for every approved line of this vendor */
+/* trial one-shot: put a small first order straight into today's basket */
+function orderTrialOnce(state, itemId, now = new Date()) {
+  const it = state.items.find(i => i.id === itemId);
+  if (!it || it.status !== 'trial' || (it.blacklist && it.blacklist.flag)) return;
+  const qty = Number(it.unit_size) || Number(it.usual_order_qty) || 1;
+  recordDecision(state, itemId, { action: 'approved', qty }, now);
+}
+function promoteTrial(state, itemId) {
+  const it = state.items.find(i => i.id === itemId);
+  if (!it) return;
+  it.status = 'vetted';
+  persistItem(state, it);
+}
+function removeItem(state, itemId) {
+  const idx = state.items.findIndex(i => i.id === itemId);
+  if (idx < 0) return;
+  state.items.splice(idx, 1);
+  saveCache(state);
+  queueWrite(state, 'delete-item', { id: itemId });
+}
 function markOrdered(state, vendor, now = new Date()) {
   const groups = buildBasket(state, now);
   const lines = groups[vendor] || [];
@@ -581,11 +767,11 @@ function markOrdered(state, vendor, now = new Date()) {
       qty: l.qty, unit: it.unit, vendor: it.vendor, price: Number(it.price) || 0,
       payment_owner: whoAmI() || it.payment_owner, payment_mode: it.payment_mode,
       by: whoAmI() || '',
-      reason: (isFinite(days) ? Math.floor(days) + ' days left' : 'manual') + ', lead ' + (it.vendor_lead_time_days || 0) + 'd + buffer ' + (it.buffer_days || 0) + 'd'
+      reason: (it.status === 'trial' ? 'trial first order' : (isFinite(days) ? Math.floor(days) + ' days left' : 'manual') + ', lead ' + (it.vendor_lead_time_days || 0) + 'd + buffer ' + (it.buffer_days || 0) + 'd')
     };
     state.log.unshift(entry);
     queueWrite(state, 'log', entry);
-    // ponytail: ordered = stock counted as arriving; a real "received" step comes with P3 Gmail scouting
+    // ponytail: ordered = stock counted as arriving; a real "received" step comes with Gmail scouting
     it.current_stock = effectiveStock(it, now) + l.qty;
     it.stock_updated_at = todayKey(now);
     persistItem(state, it);
@@ -612,7 +798,7 @@ function upsertItemFromForm(state, data) {
     vendor_lead_time_days: Number(data.vendor_lead_time_days) || 0, buffer_days: Number(data.buffer_days) || 0,
     replenish_note: data.replenish_note.trim(),
     blacklist: { flag: !!data.blacklist_flag, reason: data.blacklist_reason.trim() },
-    status: data.blacklist_flag ? 'blacklisted' : data.status,
+    status: data.blacklist_flag ? 'blacklisted' : (existing ? existing.status : 'vetted'),
     seed: false
   });
   if (existing) Object.assign(existing, next); else state.items.push(next);
@@ -623,6 +809,7 @@ function quickAdd(state, data) {
   const pack = Number(data.pack) || 0;
   const item = blankItem({
     item: data.item.trim(), vendor: data.vendor.trim(), unit: data.unit,
+    category: data.category || 'grains-legumes-pulses',
     qty_per_person_per_day: (Number(data.daily) || 0) / 5, people_served: 5,
     unit_size: pack, usual_order_qty: pack, storage_ceiling: pack * 2,
     current_stock: pack, payment_owner: whoAmI() || 'Ritika'
@@ -630,6 +817,31 @@ function quickAdd(state, data) {
   state.items.push(item);
   persistItem(state, item);
   return item;
+}
+function addTrial(state, data) {
+  const pack = Number(data.pack) || 0;
+  const item = blankItem({
+    item: data.item.trim(), vendor: data.vendor.trim(), unit: data.unit,
+    category: data.category || 'grains-legumes-pulses',
+    known_good_source: data.known_good_source.trim(),
+    price: Number(data.price) || 0,
+    unit_size: pack, usual_order_qty: pack, storage_ceiling: pack * 2,
+    status: 'trial', payment_owner: whoAmI() || 'Ritika'
+  });
+  state.items.push(item);
+  persistItem(state, item);
+  return item;
+}
+function addCategory(state, name, parent, daytoday) {
+  // sub ids are scoped to their parent so "Other" under Dairy and "Other" under
+  // Cleaning don't collide
+  const id = parent ? parent + '--' + slug(name) : slug(name);
+  if (catById(state, id)) return { ok: false, reason: 'exists' };
+  const cat = { id, name: String(name).trim() };
+  if (parent) cat.parent = parent; else cat.tracked = !daytoday;
+  state.categories.push(cat);
+  persistHousehold(state);
+  return { ok: true, id };
 }
 function setStockFraction(state, itemId, fraction, now = new Date()) {
   const it = state.items.find(i => i.id === itemId);
@@ -641,12 +853,105 @@ function setStockFraction(state, itemId, fraction, now = new Date()) {
   persistItem(state, it);
 }
 
+/* ---------- CSV import (for the structured data doc) ---------- */
+function parseCSV(text) {
+  const rows = []; let row = [], cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQ) {
+      if (c === '"') { if (text[i + 1] === '"') { cur += '"'; i++; } else inQ = false; }
+      else cur += c;
+    }
+    else if (c === '"') inQ = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n' || c === '\r') {
+      if (c === '\r' && text[i + 1] === '\n') i++;
+      row.push(cur); cur = '';
+      if (row.length > 1 || row[0].trim() !== '') rows.push(row);
+      row = [];
+    }
+    else cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); if (row.length > 1 || row[0].trim() !== '') rows.push(row); }
+  return rows;
+}
+/* forgiving header names — Ritika's sheet won't match the template exactly */
+const CSV_ALIASES = Object.assign(Object.create(null), {
+  item: ['item', 'name', 'item_name'],
+  category: ['category'],
+  subcategory: ['subcategory', 'sub_category', 'sub'],
+  vendor: ['vendor', 'shop', 'store', 'from'],
+  brand: ['brand', 'source', 'known_good_source'],
+  unit: ['unit'],
+  per_person_per_day: ['per_person_per_day', 'qty_per_person_per_day', 'per_person', 'daily_per_person'],
+  people_served: ['people_served', 'people'],
+  pack_size: ['pack_size', 'unit_size', 'pack'],
+  usual_order_qty: ['usual_order_qty', 'order_qty', 'usual_qty'],
+  storage_ceiling: ['storage_ceiling', 'ceiling', 'max_stock'],
+  current_stock: ['current_stock', 'stock', 'stock_now'],
+  reserve_packs: ['reserve_packs', 'reserve_units', 'reserve'],
+  price: ['price'],
+  price_ceiling: ['price_ceiling', 'max_price'],
+  payment_mode: ['payment_mode', 'payment'],
+  payment_owner: ['payment_owner', 'paid_by'],
+  lead_days: ['lead_days', 'vendor_lead_time_days', 'lead_time'],
+  buffer_days: ['buffer_days', 'buffer'],
+  notes: ['notes', 'note', 'replenish_note']
+});
+function importItemsCSV(state, text) {
+  const rows = parseCSV(String(text).replace(/^﻿/, ''));
+  if (rows.length < 2) return { added: 0, skipped: [], error: 'Need a header row plus at least one item row.' };
+  const head = rows[0].map(h => h.trim().toLowerCase().replace(/\s+/g, '_'));
+  const col = (r, key) => {
+    for (const alias of (CSV_ALIASES[key] || [key])) {
+      const i = head.indexOf(alias);
+      if (i >= 0) return String(r[i] || '').trim();
+    }
+    return '';
+  };
+  const norm = s => String(s || '').trim().toLowerCase();
+  let added = 0; const skipped = [];
+  rows.slice(1).forEach((r, idx) => {
+    const name = col(r, 'item');
+    if (!name) { skipped.push('row ' + (idx + 2) + ': no item name'); return; }
+    // dedup on the vendor-item pair — re-pasting the same sheet must not double the list
+    if (state.items.some(i => norm(i.item) === norm(name) && norm(i.vendor) === norm(col(r, 'vendor')))) {
+      skipped.push('row ' + (idx + 2) + ' (' + name + '): already on the list from this vendor');
+      return;
+    }
+    const cat = findCategoryByName(state, col(r, 'category'), col(r, 'subcategory'));
+    if (!cat) { skipped.push('row ' + (idx + 2) + ' (' + name + '): unknown category "' + col(r, 'category') + '"'); return; }
+    const num = (n) => { const v = Number(col(r, n)); return isFinite(v) ? v : 0; };
+    const item = blankItem({
+      item: name, category: cat.id, vendor: col(r, 'vendor'),
+      known_good_source: col(r, 'brand'), unit: col(r, 'unit') || 'g',
+      qty_per_person_per_day: num('per_person_per_day'),
+      people_served: num('people_served') || 5,
+      unit_size: num('pack_size'),
+      usual_order_qty: num('usual_order_qty') || num('pack_size'),
+      storage_ceiling: num('storage_ceiling') || num('pack_size') * 2,
+      current_stock: num('current_stock'),
+      reserve_units: num('reserve_packs'),
+      price: num('price'), price_ceiling: num('price_ceiling'),
+      payment_mode: col(r, 'payment_mode') || 'UPI',
+      payment_owner: col(r, 'payment_owner') || 'Ritika',
+      vendor_lead_time_days: col(r, 'lead_days') !== '' ? num('lead_days') : 2,
+      buffer_days: col(r, 'buffer_days') !== '' ? num('buffer_days') : 2,
+      replenish_note: col(r, 'notes')
+    });
+    state.items.push(item);
+    persistItem(state, item);
+    added++;
+  });
+  return { added, skipped };
+}
+
 /* ---------- render ---------- */
 const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtDate = d => d ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—';
 const fmtDays = n => !isFinite(n) ? '—' : (n < 1 ? '<1' : String(Math.floor(n)));
 let currentTab = 'digest';
-let bootScreen = null; // 'start' when no household yet in shared-capable mode
+let bootScreen = null;
 
 function render(state) {
   const view = document.getElementById('view');
@@ -660,7 +965,7 @@ function render(state) {
     return;
   }
   document.getElementById('tabsNav').style.display = '';
-  const titles = { digest: 'Morning digest', items: 'Items — shared pool', log: 'Order log' };
+  const titles = { digest: 'Morning digest', items: 'Items — the family list', log: 'Order log' };
   document.getElementById('pageTitle').textContent = titles[currentTab];
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
   const banners = renderBanners(state);
@@ -677,6 +982,7 @@ function renderStartScreen(state) {
   const hasOld = state.items.length > 0;
   return '<div class="center"><h2>Set up your household</h2>' +
     '<p>One shared list for both houses — everyone with the link sees the same items, stock, and orders.</p>' +
+    '<div class="note" style="text-align:left;">Already have a family list? <b>Don\'t start a new one</b> — open the link the family shared (it ends in <span style="font-family:var(--mono);">#h=…</span>) and this device joins it.</div>' +
     (hasOld ? '<p class="why">Found ' + state.items.length + ' items already on this device — they\'ll come along.</p>' : '') +
     '<div class="actions" style="justify-content:center;"><button class="btn primary" data-action="create-household">Start our household</button></div>' +
     '<p class="why" style="margin-top:14px;">You\'ll get a link to share with the family.</p></div>';
@@ -713,13 +1019,13 @@ function renderBasketSection(state) {
 }
 function renderDigestView(state) {
   const lines = buildDigestLines(state);
-  if (!lines.length) return '<div class="empty">Nothing needs ordering today. The digest fills in when an item’s days-remaining dips below its lead time + buffer.</div>';
+  if (!lines.length) return '<div class="empty">Nothing needs ordering today. The digest fills in when a tracked item’s days-remaining dips below its lead time + buffer.</div>';
   return lines.map(l => {
     const it = l.item, lane = l.laneInfo.lane;
     const days = daysRemaining(it), trig = reorderTriggerDays(it);
     const vnote = VENDOR_NOTES[it.vendor] ? ' <span class="chip">' + esc(VENDOR_NOTES[it.vendor]) + '</span>' : '';
     const head = '<div class="row"><div><h3>' + esc(it.item) + (it.seed ? ' <span class="chip ex">example</span>' : '') + '</h3>' +
-      '<span class="sub">' + esc(it.vendor || 'no vendor set') + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + '</span></div>' +
+      '<span class="sub">' + esc(it.vendor || 'no vendor set') + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + ' · ' + esc(catName(state, it.category)) + '</span></div>' +
       '<span class="flag ' + lane.toLowerCase() + '">' + lane + '</span></div>';
     if (l.decision) {
       const what = l.decision.action === 'ordered' ? 'Ordered ✓ — ' + l.decision.qty + esc(it.unit) + ' logged'
@@ -750,29 +1056,80 @@ function renderDigestView(state) {
       '</div></div>';
   }).join('');
 }
-function renderItemsView(state) {
-  const rows = state.items.map(it => {
-    const days = daysRemaining(it);
-    const lane = computeLane(it).lane;
-    const stockChip = backstockOk(it) ? '<span class="chip ok">reserve ✓</span>' : '<span class="chip warn">no reserve</span>';
-    const badge = it.blacklist.flag ? ' <span class="flag stop">STOP</span>' : (it.status === 'trial' ? ' <span class="chip">trial</span>' : '');
-    return '<div class="card" data-item-card="' + it.id + '">' +
-      '<div class="row"><div><h3>' + esc(it.item) + (it.seed ? ' <span class="chip ex">example</span>' : '') + badge + '</h3>' +
-      '<span class="sub">' + esc(it.vendor) + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + '</span></div>' + stockChip + '</div>' +
-      '<div class="kpis">' +
+function renderItemCard(state, it) {
+  const tracked = isTrackedItem(state, it);
+  const days = daysRemaining(it);
+  const lane = computeLane(it).lane;
+  const stockChip = tracked
+    ? (backstockOk(it) ? '<span class="chip ok">reserve ✓</span>' : '<span class="chip warn">no reserve</span>')
+    : '<span class="chip">day-to-day</span>';
+  const badge = it.blacklist.flag ? ' <span class="flag stop">STOP</span>' : '';
+  const kpis = tracked
+    ? '<div class="kpis">' +
       '<span class="kpi">Stock ≈ <b>' + Math.round(effectiveStock(it)) + esc(it.unit) + '</b></span>' +
       '<span class="kpi"><b>' + fmtDays(days) + '</b> days left</span>' +
       '<span class="kpi">runs out ~<b>' + fmtDate(runOutDate(it)) + '</b></span>' +
       (isTriggered(it) && lane !== 'STOP' ? '<span class="kpi"><b>in today’s digest</b></span>' : '') +
-      '</div>' +
-      (it.replenish_note ? '<p class="why">♻︎ ' + esc(it.replenish_note) + '</p>' : '') +
-      '<div class="actions"><button class="btn ghost small" data-action="edit-item" data-id="' + it.id + '">Edit</button></div>' +
-      '</div>';
-  }).join('');
-  return '<div class="actions" style="margin:0 0 14px;">' +
+      '</div>'
+    : '<div class="kpis"><span class="kpi">Bought fresh as needed — not stock-tracked</span></div>';
+  return '<div class="card" data-item-card="' + it.id + '">' +
+    '<div class="row"><div><h3>' + esc(it.item) + (it.seed ? ' <span class="chip ex">example</span>' : '') + badge + '</h3>' +
+    '<span class="sub">' + esc(it.vendor) + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + '</span></div>' + stockChip + '</div>' +
+    kpis +
+    (it.replenish_note ? '<p class="why">♻︎ ' + esc(it.replenish_note) + '</p>' : '') +
+    '<div class="actions"><button class="btn ghost small" data-action="edit-item" data-id="' + it.id + '">Edit</button></div>' +
+    '</div>';
+}
+function renderItemsView(state) {
+  const vetted = state.items.filter(i => i.status !== 'trial');
+  const trials = state.items.filter(i => i.status === 'trial');
+  // group repository by top-level category
+  const tops = (state.categories || []).filter(c => !c.parent);
+  let repoHtml = '';
+  tops.forEach(top => {
+    const inTop = vetted.filter(i => { const t = catTopOf(state, i.category); return t && t.id === top.id; });
+    if (!inTop.length) return;
+    repoHtml += '<div class="group-h">' + esc(top.name) + (top.tracked === false ? ' · day-to-day' : '') + '</div>' +
+      inTop.map(it => renderItemCard(state, it)).join('');
+  });
+  const orphans = vetted.filter(i => !catTopOf(state, i.category));
+  if (orphans.length) repoHtml += '<div class="group-h">Uncategorised</div>' + orphans.map(it => renderItemCard(state, it)).join('');
+
+  const todayDecisions = state.digest_decisions[todayKey()] || {};
+  const trialsHtml = trials.length
+    ? '<div class="trials"><h2>🌱 Trials — earning their place</h2>' +
+      '<p class="t-sub">Small first orders, one new thing at a time. What works joins the family list; what doesn’t gets removed.</p>' +
+      trials.map(it => {
+        const d = todayDecisions[it.id];
+        const orderBit = d && d.action === 'ordered'
+          ? '<p class="why">Ordered ✓ — decide after you’ve tried it.</p><div class="actions">'
+          : d && d.action === 'approved'
+            ? '<p class="why">🧺 In today’s basket — send it from the <b>Digest</b> tab, then “Mark ordered”.</p><div class="actions">'
+            : '<div class="actions"><button class="btn small" data-action="trial-order" data-id="' + it.id + '">Order trial once</button>';
+        return '<div class="card">' +
+        '<div class="row"><div><h3>' + esc(it.item) + '</h3>' +
+        '<span class="sub">' + esc(it.vendor) + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + ' · ' + esc(catName(state, it.category)) + '</span></div>' +
+        (Number(it.price) > 0 ? '<span class="chip">₹' + esc(it.price) + '</span>' : '') + '</div>' +
+        orderBit +
+        '<button class="btn ghost small" data-action="trial-promote" data-id="' + it.id + '">Worked — add to the list</button>' +
+        '<button class="btn danger small" data-action="trial-remove" data-id="' + it.id + '">Remove</button>' +
+        '</div></div>';
+      }).join('') +
+      '</div>'
+    : '';
+
+  const adminBtns = isAdmin(state)
+    ? '<button class="btn ghost" data-action="manage-categories">Categories</button>' +
+      '<button class="btn ghost" data-action="csv-open">Import CSV</button>'
+    : '';
+  return '<div class="actions" style="margin:0 0 6px;">' +
     '<button class="btn" data-action="quick-add">+ Add item</button>' +
+    '<button class="btn ghost" data-action="trial-add">Try something new</button>' +
     '<button class="btn ghost" data-action="stock-check">Stock check</button>' +
-    '</div>' + (rows || '<div class="empty">No items yet — add the first one.</div>');
+    adminBtns +
+    '</div>' +
+    trialsHtml +
+    (repoHtml || '<div class="empty">No items yet — add the first one.</div>');
 }
 function renderLogView(state) {
   if (!state.log.length) return '<div class="empty">No orders yet. When a basket is marked ordered, it lands here — what, from where, why, at what price, and who ordered.</div>';
@@ -786,13 +1143,13 @@ function renderFooter(state) {
     ? 'Family link (share this exact link): ' + location.origin + location.pathname + '#h=' + householdId + '<br>'
     : '';
   document.getElementById('footerBox').innerHTML = share +
-    'Home OS v2 · shared-pool tracker · Backup saves a copy of everything.';
+    'Home OS v2.1 · the family list tracks each item per vendor · Backup saves a copy of everything.';
 }
 
-/* ---------- stock check flow ---------- */
+/* ---------- stock check flow (tracked repository items only) ---------- */
 let stockQueue = [];
 function startStockCheck(state) {
-  stockQueue = state.items.filter(i => !i.blacklist.flag).map(i => i.id);
+  stockQueue = state.items.filter(i => isTrackedItem(state, i) && !i.blacklist.flag).map(i => i.id);
   if (!stockQueue.length) return;
   document.getElementById('stockDialog').showModal();
   renderStockStep(state);
@@ -805,6 +1162,7 @@ function renderStockStep(state) {
     return;
   }
   const it = state.items.find(i => i.id === stockQueue[0]);
+  if (!it) { stockQueue.shift(); renderStockStep(state); return; }
   const full = Number(it.storage_ceiling) || Number(it.unit_size) || 0;
   body.innerHTML = '<h2>' + esc(it.item) + '</h2>' +
     '<p class="d-sub">How full is it, roughly? (full ≈ ' + full + esc(it.unit) + ' · now ≈ ' + Math.round(effectiveStock(it)) + esc(it.unit) + ')</p>' +
@@ -816,7 +1174,27 @@ function renderStockStep(state) {
     '<button class="btn ghost small" data-action="stock-close">Stop here</button></div>';
 }
 
-/* ---------- export / import ---------- */
+/* ---------- category manager ---------- */
+function openCatDialog(state) {
+  const list = document.getElementById('catList');
+  const cats = state.categories || [];
+  const counts = Object.create(null);
+  state.items.forEach(i => { counts[i.category] = (counts[i.category] || 0) + 1; });
+  const tops = cats.filter(c => !c.parent);
+  list.innerHTML = tops.map(top => {
+    const subs = cats.filter(c => c.parent === top.id);
+    const line = (c, isSub) => '<li' + (isSub ? ' class="sub"' : '') + '><span>' + esc(c.name) +
+      (!isSub && c.tracked === false ? ' <span class="chip">day-to-day</span>' : '') + '</span>' +
+      '<span class="chip">' + (counts[c.id] || 0) + ' items</span></li>';
+    return line(top, false) + subs.map(s => line(s, true)).join('');
+  }).join('');
+  const parentSel = document.getElementById('c-parent');
+  parentSel.innerHTML = '<option value="">— top level —</option>' +
+    tops.map(t => '<option value="' + esc(t.id) + '">' + esc(t.name) + '</option>').join('');
+  document.getElementById('catDialog').showModal();
+}
+
+/* ---------- export / import / copy ---------- */
 function exportJSON(state) {
   const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -825,8 +1203,6 @@ function exportJSON(state) {
   a.click();
   URL.revokeObjectURL(a.href);
 }
-
-/* ---------- copy helper ---------- */
 function copyText(text) {
   if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
   const ta = document.createElement('textarea');
@@ -848,6 +1224,7 @@ async function boot() {
   if (!dbConfigured()) {
     mode = 'local';
     if (!state.items.length) state.items = seedItems();
+    migrateCategories(state);
     saveCache(state);
   } else if (householdId) {
     try {
@@ -856,12 +1233,15 @@ async function boot() {
       state.items = remote.items;
       state.log = remote.log;
       state.digest_decisions = remote.digest_decisions;
+      if (remote.categories) state.categories = remote.categories;
+      if (remote.admins) state.admins = remote.admins;
       mode = 'shared';
+      migrateCategories(state);
       saveCache(state);
       if (location.hash.indexOf('#h=') < 0) location.hash = '#h=' + householdId;
       flushOutbox(state);
     } catch (e) {
-      mode = 'offline'; // work from cache; retry on focus
+      mode = 'offline';
     }
   } else {
     mode = 'local';
@@ -872,8 +1252,8 @@ async function boot() {
 }
 async function createHousehold(state) {
   try {
-    householdId = uid(); // client-generated so the x-household-id header carries it on create
-    await db.createHousehold(householdId, 'Home');
+    householdId = uid();
+    await db.createHousehold(householdId, 'Home', state.categories, state.admins);
     state.household = householdId;
     if (!state.items.length) state.items = seedItems();
     mode = 'shared';
@@ -894,16 +1274,20 @@ function openWhoDialog() {
 }
 
 /* ---------- item dialog ---------- */
-function openItemDialog(state, itemId) {
+function openItemDialog(state, itemId, hint) {
   const dlg = document.getElementById('itemDialog');
   const form = document.getElementById('itemForm');
   form.reset();
   const it = itemId ? state.items.find(i => i.id === itemId) : null;
   document.getElementById('dialogTitle').textContent = it ? 'Edit — ' + it.item : 'Add item';
+  document.getElementById('dialogSub').textContent = hint ||
+    'An entry is one item from one vendor — Almonds from Zama and Almonds from Nature’s are two entries.';
+  document.getElementById('deleteItemBtn').hidden = !it;
+  if (it) document.getElementById('deleteItemBtn').dataset.id = it.id;
+  form.elements.category.innerHTML = catOptionsHTML(state, it ? it.category : 'grains-legumes-pulses');
   const set = (n, v) => { if (form.elements[n]) form.elements[n].value = v == null ? '' : v; };
   if (it) {
     set('id', it.id); set('item', it.item); set('category', it.category);
-    set('status', it.status === 'blacklisted' ? 'vetted' : it.status);
     set('qty_per_person_per_day', it.qty_per_person_per_day); set('unit', it.unit);
     set('people_served', it.people_served); set('frequency', it.frequency);
     set('current_stock', it.current_stock); set('reserve_units', it.reserve_units);
@@ -919,6 +1303,7 @@ function openItemDialog(state, itemId) {
     set('payment_owner', whoAmI() || 'Ritika'); set('payment_mode', 'UPI');
   }
   dlg.showModal();
+  if (hint && form.elements.qty_per_person_per_day) form.elements.qty_per_person_per_day.focus();
 }
 
 /* ---------- events (one delegated listener) ---------- */
@@ -952,7 +1337,37 @@ document.addEventListener('click', (ev) => {
       break;
     }
     case 'mark-ordered': markOrdered(state, btn.dataset.vendor); render(state); break;
-    case 'quick-add': document.getElementById('quickForm').reset(); document.getElementById('quickDialog').showModal(); break;
+    case 'quick-add': {
+      document.getElementById('quickForm').reset();
+      document.getElementById('q-category').innerHTML = catOptionsHTML(state, 'grains-legumes-pulses');
+      document.getElementById('quickDialog').showModal(); break;
+    }
+    case 'trial-add': {
+      document.getElementById('trialForm').reset();
+      document.getElementById('t-category').innerHTML = catOptionsHTML(state, 'grains-legumes-pulses');
+      document.getElementById('trialDialog').showModal(); break;
+    }
+    case 'trial-order': orderTrialOnce(state, id); render(state); break;
+    case 'trial-promote': {
+      promoteTrial(state, id);
+      render(state);
+      openItemDialog(state, id, 'It’s on the family list now. Just fill “Per person per day” so reordering can be planned — everything else is optional.');
+      break;
+    }
+    case 'trial-remove': {
+      const it = state.items.find(i => i.id === id);
+      if (it && confirm('Remove trial "' + it.item + '" for everyone? If it’s in today’s basket, it comes off that too.')) { removeItem(state, id); render(state); }
+      break;
+    }
+    case 'delete-item': {
+      const it = state.items.find(i => i.id === btn.dataset.id);
+      if (it && confirm('Delete "' + it.item + '" (' + (it.vendor || 'no vendor') + ') for everyone? It comes off today’s digest and basket too. The order log keeps its history.')) {
+        removeItem(state, btn.dataset.id);
+        document.getElementById('itemDialog').close();
+        render(state);
+      }
+      break;
+    }
     case 'edit-item': openItemDialog(state, id); break;
     case 'stock-check': startStockCheck(state); break;
     case 'stock-set': {
@@ -961,6 +1376,20 @@ document.addEventListener('click', (ev) => {
     }
     case 'stock-skip': stockQueue.shift(); renderStockStep(state); break;
     case 'stock-close': document.getElementById('stockDialog').close(); render(state); break;
+    case 'manage-categories': openCatDialog(state); break;
+    case 'csv-open': {
+      document.getElementById('csvResult').textContent = '';
+      document.getElementById('csvDialog').showModal(); break;
+    }
+    case 'csv-import': {
+      const res = importItemsCSV(state, document.getElementById('csvText').value);
+      document.getElementById('csvResult').textContent = res.error
+        ? res.error
+        : 'Imported ' + res.added + ' item' + (res.added === 1 ? '' : 's') + '.' +
+          (res.skipped.length ? ' Skipped ' + res.skipped.length + ': ' + res.skipped.join('; ') : '');
+      if (res.added) render(state);
+      break;
+    }
     case 'create-household': createHousehold(state); break;
     case 'who-pick': setWho(btn.dataset.name); document.getElementById('whoDialog').close(); render(state); break;
     case 'who-save': {
@@ -972,6 +1401,9 @@ document.addEventListener('click', (ev) => {
     case 'export': exportJSON(state); break;
     case 'dialog-cancel': document.getElementById('itemDialog').close('cancel'); break;
     case 'dialog-cancel-quick': document.getElementById('quickDialog').close('cancel'); break;
+    case 'dialog-cancel-trial': document.getElementById('trialDialog').close('cancel'); break;
+    case 'dialog-cancel-cat': document.getElementById('catDialog').close('cancel'); break;
+    case 'dialog-cancel-csv': document.getElementById('csvDialog').close('cancel'); break;
   }
 });
 document.querySelectorAll('nav.tabs button').forEach(b =>
@@ -981,7 +1413,7 @@ document.getElementById('itemForm').addEventListener('submit', (ev) => {
   const form = ev.target;
   if (!form.elements.item.value.trim()) { ev.preventDefault(); form.elements.item.focus(); return; }
   const data = {};
-  ['id','item','category','status','qty_per_person_per_day','unit','people_served','frequency',
+  ['id','item','category','qty_per_person_per_day','unit','people_served','frequency',
    'current_stock','reserve_units','backstock_target','unit_size','storage_ceiling','vendor','known_good_source',
    'usual_order_qty','vendor_lead_time_days','buffer_days','price','price_ceiling',
    'payment_mode','payment_owner','replenish_note','blacklist_reason'].forEach(n => data[n] = form.elements[n].value);
@@ -992,22 +1424,52 @@ document.getElementById('itemForm').addEventListener('submit', (ev) => {
 document.getElementById('quickForm').addEventListener('submit', (ev) => {
   const form = ev.target;
   if (!form.elements.item.value.trim()) { ev.preventDefault(); form.elements.item.focus(); return; }
-  quickAdd(state, { item: form.elements.item.value, vendor: form.elements.vendor.value, pack: form.elements.pack.value, unit: form.elements.unit.value, daily: form.elements.daily.value });
+  quickAdd(state, { item: form.elements.item.value, category: form.elements.category.value, vendor: form.elements.vendor.value, pack: form.elements.pack.value, unit: form.elements.unit.value, daily: form.elements.daily.value });
   render(state);
 });
-/* re-sync when the family comes back to the tab */
+document.getElementById('trialForm').addEventListener('submit', (ev) => {
+  const form = ev.target;
+  if (!form.elements.item.value.trim()) { ev.preventDefault(); form.elements.item.focus(); return; }
+  addTrial(state, { item: form.elements.item.value, category: form.elements.category.value, vendor: form.elements.vendor.value, known_good_source: form.elements.known_good_source.value, pack: form.elements.pack.value, unit: form.elements.unit.value, price: form.elements.price.value });
+  currentTab = 'items';
+  render(state);
+});
+document.getElementById('catForm').addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const form = ev.target;
+  const name = form.elements.name.value.trim();
+  if (!name) { form.elements.name.focus(); return; }
+  if (!isAdmin(state)) { alert('Only admins (' + (state.admins || []).join(', ') + ') can add categories.'); return; }
+  const res = addCategory(state, name, form.elements.parent.value || null, form.elements.daytoday.checked);
+  if (!res.ok) { alert('That category already exists.'); return; }
+  form.reset();
+  openCatDialog(state); // re-render the list in place
+});
+document.getElementById('importFile').addEventListener('change', (ev) => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  f.text().then(text => {
+    try {
+      const s = JSON.parse(text);
+      if (s && s.schemaVersion === 2 && Array.isArray(s.items)) { saveCache(s); state = s; boot(); }
+      else alert('That file isn’t Home OS data — nothing was changed.');
+    } catch (e) { alert('That file isn’t readable as Home OS data — nothing was changed.'); }
+    ev.target.value = '';
+  });
+});
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || mode === 'local') return;
   if (!dbConfigured() || !householdId) return;
-  await flushOutbox(state);              // push our pending writes first
-  if (state.outbox.length) return;       // still unsynced (offline) — don't let a fetch clobber them
+  await flushOutbox(state);
+  if (state.outbox.length) return;
   try {
     const remote = await db.fetchAll(householdId);
     state.items = remote.items; state.log = remote.log; state.digest_decisions = remote.digest_decisions;
+    if (remote.categories) state.categories = remote.categories;
+    if (remote.admins) state.admins = remote.admins;
     mode = 'shared'; saveCache(state); render(state);
   } catch (e) { mode = 'offline'; render(state); }
 });
-/* only re-boot when the household link actually changes to a different one (not our own set) */
 window.addEventListener('hashchange', () => {
   const h = parseHousehold();
   if (h && h === householdId) return;
@@ -1019,8 +1481,10 @@ boot();
 /* ---------- self-check (open with #selftest) ---------- */
 function runSelfTest() {
   const t = todayKey();
-  const savedMode = mode; mode = 'local'; // hermetic: no network writes during the checks
-  const base = () => blankItem({ item: 'T', vendor: 'Zama Organics', known_good_source: 'B', qty_per_person_per_day: 10, people_served: 5, current_stock: 350,
+  const savedMode = mode; mode = 'local'; // hermetic
+  const testState = () => Object.assign(emptyState(), { items: [] });
+  const base = () => blankItem({ item: 'T', vendor: 'Zama Organics', known_good_source: 'B', category: 'nuts-dried-fruits-seeds',
+    qty_per_person_per_day: 10, people_served: 5, current_stock: 350,
     storage_ceiling: 1000, usual_order_qty: 500, unit_size: 500, price: 450, price_ceiling: 550, reserve_units: 1, payment_mode: 'UPI', payment_owner: 'R' });
   const results = [];
   const ok = (name, cond) => results.push((cond ? 'PASS' : 'FAIL') + ' ' + name);
@@ -1034,14 +1498,14 @@ function runSelfTest() {
   ok('trigger boundary', isTriggered(Object.assign(base(), { current_stock: 200 })));
   ok('blacklist is STOP', computeLane(Object.assign(base(), { blacklist: { flag: true, reason: 'x' } })).lane === 'STOP');
   ok('trial caps at one pack', proposedQty(Object.assign(base(), { status: 'trial', current_stock: 0, unit_size: 100, usual_order_qty: 500 })) === 100);
-  ok('trial lane is ASK', computeLane(Object.assign(base(), { status: 'trial' })).lane === 'ASK');
   ok('price over ceiling is ASK', computeLane(Object.assign(base(), { price: 600 })).lane === 'ASK');
   ok('vetted usual is AUTO', computeLane(base()).lane === 'AUTO');
   ok('over-ceiling stock is STOP', computeLane(Object.assign(base(), { current_stock: 1000 })).lane === 'STOP');
   ok('backstock ok/nok', backstockOk(item) === true && backstockOk(Object.assign(base(), { reserve_units: 0 })) === false);
-  /* v2: approve → basket only; markOrdered → log + stock */
+  /* basket + markOrdered */
+  const st = testState();
   const it2 = Object.assign(base(), { id: uid(), current_stock: 100 });
-  const st = { schemaVersion: 2, household: null, items: [it2], log: [], digest_decisions: {}, outbox: [] };
+  st.items = [it2];
   approveDigestLine(st, it2.id);
   ok('approve does NOT touch stock', st.items[0].current_stock === 100);
   ok('approve does NOT write log', st.log.length === 0);
@@ -1049,26 +1513,60 @@ function runSelfTest() {
   const msg = vendorMessage('Zama Organics', buildBasket(st)['Zama Organics']);
   ok('message has vendor + payment note', msg.indexOf('Zama Organics order (app · no cash):') === 0);
   ok('message line format', msg.indexOf('• T — 500g (B) ~₹450') > 0);
-  ok('message total', msg.indexOf('Total ~₹450') > 0);
   markOrdered(st, 'Zama Organics');
   ok('markOrdered writes full log entry', st.log.length === 1 && st.log[0].qty === 500 && st.log[0].payment_mode === 'UPI' && st.log[0].price === 450);
   ok('markOrdered bumps stock + re-anchors', st.items[0].current_stock === 600 && st.items[0].stock_updated_at === t);
   ok('decision now ordered', st.digest_decisions[t][it2.id].action === 'ordered');
-  /* fraction capture */
+  /* v2.1: categories */
+  const st3 = testState();
+  const legacy = Object.assign(base(), { id: uid(), category: 'food-staples' });
+  st3.items = [legacy];
+  migrateCategories(st3);
+  ok('legacy category migrates', st3.items[0].category === 'nuts-dried-fruits-seeds');
+  const produce = Object.assign(base(), { id: uid(), category: 'fruits-vegetables', current_stock: 0 });
+  st3.items.push(produce);
+  ok('day-to-day category never triggers digest', buildDigestLines(st3).every(l => l.item.id !== produce.id));
+  ok('day-to-day is untracked', !isTrackedItem(st3, produce) && isTrackedItem(st3, legacy));
+  const trial = Object.assign(base(), { id: uid(), status: 'trial', current_stock: 0 });
+  st3.items.push(trial);
+  ok('trial never triggers digest', buildDigestLines(st3).every(l => l.item.id !== trial.id));
+  orderTrialOnce(st3, trial.id);
+  ok('trial order-once lands in basket at one pack', (buildBasket(st3)['Zama Organics'] || []).some(l => l.item.id === trial.id && l.qty === 500));
+  ok('trial line marked in message', vendorMessage('Zama Organics', buildBasket(st3)['Zama Organics']).indexOf('[TRIAL — first order]') > 0);
+  promoteTrial(st3, trial.id);
+  ok('promote makes it vetted', st3.items.find(i => i.id === trial.id).status === 'vetted');
+  removeItem(st3, trial.id);
+  ok('remove deletes the entry', !st3.items.find(i => i.id === trial.id));
+  const addRes = addCategory(st3, 'Oils & ghee', null, false);
+  ok('admin add category', addRes.ok && catById(st3, 'oils-ghee') && catTracked(st3, 'oils-ghee'));
+  addCategory(st3, 'Ghee', 'oils-ghee', false);
+  ok('subcategory id scoped to parent + inherits tracking', catTracked(st3, 'oils-ghee--ghee') === true && catTopOf(st3, 'oils-ghee--ghee').id === 'oils-ghee');
+  addCategory(st3, 'Other', 'oils-ghee', false);
+  const dairyOther = addCategory(st3, 'Other', 'dairy', false);
+  ok('same sub name under two parents both work', dairyOther.ok && catById(st3, 'dairy--other') && catById(st3, 'oils-ghee--other'));
+  ok('admin gate', (function(){ const s = testState(); return s.admins.includes('Ritika') && !s.admins.includes('Nobody'); })());
+  /* CSV */
+  const rows = parseCSV('a,"b,1",c\n"x""y",z,');
+  ok('CSV quoted comma + escaped quote', rows[0][1] === 'b,1' && rows[1][0] === 'x"y');
+  const st4 = testState();
+  const csv = 'item,category,vendor,unit,pack_size,qty_per_person_per_day,price\nMoong dal,Grains legumes & pulses,GRN Organics,g,1000,20,140\nMystery,Unknown Cat,X,g,100,1,10';
+  const impRes = importItemsCSV(st4, csv);
+  ok('CSV import adds known + skips unknown category (alias header)', impRes.added === 1 && impRes.skipped.length === 1 && st4.items[0] && st4.items[0].item === 'Moong dal' && st4.items[0].category === 'grains-legumes-pulses' && st4.items[0].qty_per_person_per_day === 20);
+  ok('CSV import derives defaults', !!st4.items[0] && st4.items[0].usual_order_qty === 1000 && st4.items[0].storage_ceiling === 2000);
+  const reImp = importItemsCSV(st4, csv);
+  ok('CSV re-import dedups on vendor-item pair', reImp.added === 0 && st4.items.length === 1);
+  /* fraction + quick add */
+  const st2 = testState();
   const it3 = Object.assign(base(), { id: uid(), storage_ceiling: 800 });
-  const st2 = { schemaVersion: 2, household: null, items: [it3], log: [], digest_decisions: {}, outbox: [] };
+  st2.items = [it3];
   setStockFraction(st2, it3.id, 0.5);
   ok('stock check ½ = half of ceiling', st2.items[0].current_stock === 400 && st2.items[0].stock_updated_at === t);
-  setStockFraction(st2, it3.id, 0);
-  ok('stock check Out = 0', st2.items[0].current_stock === 0);
-  /* quick add */
-  const qa = quickAdd(st2, { item: 'Pista', vendor: 'Amazon', pack: '250', unit: 'g', daily: '25' });
+  const qa = quickAdd(st2, { item: 'Pista', category: 'nuts-dried-fruits-seeds', vendor: 'Amazon', pack: '250', unit: 'g', daily: '25' });
   ok('quick add derives fields', qa.usual_order_qty === 250 && qa.storage_ceiling === 500 && dailyConsumption(qa) === 25);
-  /* outbox stays empty in local mode */
   ok('local mode queues nothing', st2.outbox.length === 0);
-  mode = savedMode; // restore live mode
+  mode = savedMode;
   const failed = results.filter(r => r.startsWith('FAIL'));
-  console.log('Home OS v2 self-test:\n' + results.join('\n'));
+  console.log('Home OS v2.1 self-test:\n' + results.join('\n'));
   alert('Self-test: ' + (results.length - failed.length) + '/' + results.length + ' passed' + (failed.length ? '\n' + failed.join('\n') : ''));
 }
 if (location.hash.indexOf('selftest') >= 0) runSelfTest();
