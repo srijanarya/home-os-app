@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home OS — v1</title>
+<style>
+  :root{
+    --ink:#1c1a17; --ink-soft:#4a453e;
+    --paper:#f6f3ec; --panel:#fffdf8; --line:#d8d2c4;
+    --sage:#5c6b4f; --sage-soft:#e7ece0;
+    --amber:#a8721e; --amber-soft:#f3e8d2;
+    --clay:#8a4b34; --clay-soft:#f0e1da;
+    --mono:"SF Mono",ui-monospace,"Cascadia Mono",Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;background:var(--paper);color:var(--ink);
+    font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+    font-size:16px;line-height:1.5;
+  }
+  .wrap{max-width:720px;margin:0 auto;padding:0 14px 90px;}
+
+  header{padding:22px 0 14px;border-bottom:2px solid var(--ink);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+  header h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.01em;}
+  .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--sage);display:block;margin-bottom:2px;}
+  .hdr-actions{display:flex;gap:8px;}
+
+  nav.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:16px;position:sticky;top:0;background:var(--paper);z-index:5;}
+  nav.tabs button{
+    flex:1;appearance:none;background:none;border:none;border-bottom:2px solid transparent;
+    font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--ink-soft);padding:12px 4px;cursor:pointer;
+  }
+  nav.tabs button.active{color:var(--ink);border-bottom-color:var(--amber);font-weight:600;}
+  nav.tabs button:focus-visible{outline:2px solid var(--amber);outline-offset:-2px;}
+  nav.tabs button .badge{
+    display:inline-block;min-width:18px;padding:1px 5px;margin-left:4px;border-radius:9px;
+    background:var(--amber);color:#fff;font-size:10px;
+  }
+
+  .note{background:var(--amber-soft);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:0 3px 3px 0;padding:10px 14px;font-size:14px;margin:0 0 16px;}
+  .note.quiet{background:var(--panel);border-left-color:var(--sage);}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:14px 16px;margin:0 0 12px;}
+  .card h3{margin:0 0 2px;font-size:17px;font-weight:600;}
+  .card .sub{font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.03em;}
+  .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .kpis{display:flex;gap:14px;flex-wrap:wrap;margin:8px 0 4px;}
+  .kpi{font-size:13.5px;color:var(--ink-soft);}
+  .kpi b{color:var(--ink);font-variant-numeric:tabular-nums;}
+
+  .flag{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:2px;letter-spacing:.05em;color:#fff;white-space:nowrap;}
+  .flag.auto{background:var(--sage);}
+  .flag.ask{background:var(--amber);}
+  .flag.stop{background:var(--clay);}
+  .chip{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:2px;letter-spacing:.04em;border:1px solid var(--line);color:var(--ink-soft);background:var(--paper);white-space:nowrap;}
+  .chip.ok{border-color:var(--sage);color:var(--sage);background:var(--sage-soft);}
+  .chip.warn{border-color:var(--clay);color:var(--clay);background:var(--clay-soft);}
+  .chip.ex{border-color:var(--amber);color:var(--amber);background:var(--amber-soft);}
+
+  button.btn{
+    appearance:none;font-family:var(--mono);font-size:12px;letter-spacing:.06em;
+    border:1px solid var(--ink);background:var(--ink);color:var(--paper);
+    border-radius:3px;padding:9px 14px;cursor:pointer;
+  }
+  button.btn.ghost{background:none;color:var(--ink);}
+  button.btn.small{padding:6px 10px;font-size:11px;}
+  button.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+  button.btn:disabled{opacity:.45;cursor:not-allowed;}
+  .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
+
+  .why{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin:6px 0 0;}
+  .stop-reason{color:var(--clay);font-size:13.5px;margin:6px 0 0;}
+  .resolved{opacity:.62;}
+  .resolved .flag{filter:grayscale(.4);}
+
+  .adjust{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
+  .adjust.open{display:block;}
+  .adjust label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--sage);margin:8px 0 3px;}
+  .adjust input,.adjust select{width:100%;}
+
+  input,select,textarea{
+    font-family:inherit;font-size:15px;color:var(--ink);
+    background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:8px 10px;
+  }
+  input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:0;}
+
+  dialog{
+    border:1px solid var(--ink);border-radius:4px;padding:0;
+    width:min(640px,calc(100vw - 24px));max-height:88vh;
+    background:var(--panel);color:var(--ink);
+  }
+  dialog::backdrop{background:rgba(28,26,23,.45);}
+  dialog form{padding:18px 18px 14px;}
+  dialog h2{margin:0 0 4px;font-size:20px;}
+  dialog .d-sub{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin:0 0 12px;}
+  fieldset{border:1px solid var(--line);border-radius:3px;margin:0 0 12px;padding:10px 12px 12px;}
+  legend{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sage);padding:0 6px;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .grid .full{grid-column:1 / -1;}
+  .field label{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);margin:0 0 3px;}
+  .field input,.field select{width:100%;}
+  .field .hint{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .check{display:flex;align-items:center;gap:8px;font-size:14.5px;}
+  .check input{width:auto;}
+  .d-actions{display:flex;justify-content:space-between;gap:8px;margin-top:4px;flex-wrap:wrap;}
+
+  .tablewrap{overflow-x:auto;margin:0 0 14px;}
+  table{width:100%;border-collapse:collapse;font-size:14px;}
+  th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--sage);border-bottom:1.5px solid var(--ink);white-space:nowrap;}
+  td{font-variant-numeric:tabular-nums;}
+
+  .empty{padding:32px 10px;text-align:center;color:var(--ink-soft);font-style:italic;}
+  footer{margin-top:26px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);line-height:1.7;}
+  @media (max-width:480px){ .grid{grid-template-columns:1fr;} header h1{font-size:19px;} }
+  @media (prefers-reduced-motion:no-preference){ .card{transition:opacity .18s ease;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div>
+    <span class="eyebrow">Home OS · v1 prototype</span>
+    <h1 id="pageTitle">Morning digest</h1>
+  </div>
+  <div class="hdr-actions">
+    <button class="btn ghost small" data-action="export" title="Save a copy to send to Srijan as feedback">Send to Srijan</button>
+    <button class="btn ghost small" data-action="import" title="Load a copy back in">Load a copy</button>
+    <input type="file" id="importFile" accept="application/json" hidden>
+  </div>
+</header>
+
+<nav class="tabs" aria-label="Views">
+  <button data-tab="digest" class="active">Digest<span class="badge" id="digestBadge" hidden></span></button>
+  <button data-tab="items">Items</button>
+  <button data-tab="log">Log</button>
+</nav>
+
+<main id="view" aria-live="polite"></main>
+
+<footer>
+  Your changes stay on this device. When you're ready, tap <b>Send to Srijan</b> (top right) to save a copy and share it — your edits become the next version.<br>
+  Home OS v1 · shared-pool tracker · built from the PRD + Ritika's restocking brief.
+</footer>
+</div>
+
+<dialog id="itemDialog">
+  <form id="itemForm" method="dialog" novalidate>
+    <h2 id="dialogTitle">Edit item</h2>
+    <p class="d-sub">Everything is editable — columns grow as needs grow.</p>
+    <input type="hidden" name="id">
+
+    <fieldset>
+      <legend>Basics</legend>
+      <div class="grid">
+        <div class="field full"><label for="f-item">Item</label><input id="f-item" name="item" required></div>
+        <div class="field"><label for="f-category">Category</label>
+          <select id="f-category" name="category">
+            <option value="food-staples">Food &amp; kitchen staples</option>
+            <option value="herbs-supplements">Herbs &amp; supplements</option>
+            <option value="cleaning-personal-care">Cleaning &amp; personal care</option>
+            <option value="garden-inputs">Garden / growing inputs</option>
+            <option value="household-consumables">Household consumables</option>
+          </select>
+        </div>
+        <div class="field"><label for="f-status">Status</label>
+          <select id="f-status" name="status">
+            <option value="vetted">Vetted (known-good)</option>
+            <option value="trial">Trial (new — small orders)</option>
+          </select>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Consumption</legend>
+      <div class="grid">
+        <div class="field"><label for="f-qpd">Per person per day</label><input id="f-qpd" name="qty_per_person_per_day" type="number" min="0" step="any"></div>
+        <div class="field"><label for="f-unit">Unit</label>
+          <select id="f-unit" name="unit"><option>g</option><option>ml</option><option>pcs</option></select>
+        </div>
+        <div class="field"><label for="f-people">People served</label><input id="f-people" name="people_served" type="number" min="1" step="1"></div>
+        <div class="field"><label for="f-frequency">Ordering rhythm</label><input id="f-frequency" name="frequency" placeholder="e.g. weekly"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Stock</legend>
+      <div class="grid">
+        <div class="field"><label for="f-stock">Stock now (open + reserve)</label><input id="f-stock" name="current_stock" type="number" min="0" step="any"><div class="hint">In the unit above; saving re-anchors today</div></div>
+        <div class="field"><label for="f-reserve">Unopened packs in reserve</label><input id="f-reserve" name="reserve_units" type="number" min="0" step="1"></div>
+        <div class="field"><label for="f-backstop">Reserve target (packs)</label><input id="f-backstop" name="backstock_target" type="number" min="0" step="1"><div class="hint">How many spare packs to always keep</div></div>
+        <div class="field"><label for="f-unitsize">Pack size</label><input id="f-unitsize" name="unit_size" type="number" min="0" step="any"></div>
+        <div class="field"><label for="f-ceiling">Storage ceiling (max to hold)</label><input id="f-ceiling" name="storage_ceiling" type="number" min="0" step="any"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Ordering</legend>
+      <div class="grid">
+        <div class="field"><label for="f-vendor">Vendor</label><input id="f-vendor" name="vendor" list="vendorList"><datalist id="vendorList"><option>Zama Organics</option><option>GRN Organics</option><option>Blinkit</option><option>Amazon</option><option>Nature's</option></datalist></div>
+        <div class="field"><label for="f-source">Known-good brand</label><input id="f-source" name="known_good_source"></div>
+        <div class="field"><label for="f-usual">Usual order qty</label><input id="f-usual" name="usual_order_qty" type="number" min="0" step="any"></div>
+        <div class="field"><label for="f-lead">Lead time (days)</label><input id="f-lead" name="vendor_lead_time_days" type="number" min="0" step="1"></div>
+        <div class="field"><label for="f-buffer">Safety buffer (days)</label><input id="f-buffer" name="buffer_days" type="number" min="0" step="1"></div>
+        <div class="field"><label for="f-price">Price (₹, usual qty)</label><input id="f-price" name="price" type="number" min="0" step="any"></div>
+        <div class="field"><label for="f-priceceiling">Price ceiling (₹)</label><input id="f-priceceiling" name="price_ceiling" type="number" min="0" step="any"></div>
+        <div class="field"><label for="f-paymode">Payment mode</label><input id="f-paymode" name="payment_mode" list="payList"><datalist id="payList"><option>UPI</option><option>Card</option><option>App wallet</option><option>COD</option><option>Cash</option></datalist></div>
+        <div class="field"><label for="f-payowner">Payment owner</label><input id="f-payowner" name="payment_owner"></div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Values</legend>
+      <div class="grid">
+        <div class="field full"><label for="f-replenish">Make / grow / refill instead?</label><input id="f-replenish" name="replenish_note" placeholder="e.g. grow from seed, buy refill pack"></div>
+        <div class="field full check"><input id="f-blacklist" name="blacklist_flag" type="checkbox"> <label for="f-blacklist" style="margin:0;text-transform:none;font-size:14.5px;">Blacklisted — never order this brand</label></div>
+        <div class="field full"><label for="f-blreason">Blacklist reason</label><input id="f-blreason" name="blacklist_reason"></div>
+      </div>
+    </fieldset>
+
+    <div class="d-actions">
+      <button type="button" class="btn ghost" data-action="dialog-cancel">Cancel</button>
+      <button type="submit" class="btn" value="save">Save item</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+'use strict';
+/* ===== Home OS v1 — shared-pool tracker =====
+   Single file, no dependencies. State in localStorage (in-memory fallback).
+   All quantity math in raw units (g/ml/pcs); packs only at display layer. */
+
+const STORAGE_KEY = 'homeOS_v1';
+const MS_PER_DAY = 86400000;
+// null-prototype so a vendor named "constructor"/"toString" can't inherit a truthy note
+const VENDOR_NOTES = Object.assign(Object.create(null), { // payment constraints from the PRD
+  'Zama Organics': 'app · no cash',
+  'GRN Organics': 'call / walk-in',
+  'Blinkit': 'COD may carry surcharge',
+  'Amazon': 'cash limits apply',
+  "Nature's": ''
+});
+
+function todayKey(d = new Date()) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+
+/* ---------- seed data: EXAMPLE values, the family corrects them ---------- */
+function defaultState() {
+  const t = todayKey();
+  const mk = (o) => Object.assign({
+    id: uid(), category: 'food-staples', houses: 'shared-pool', vendor: '', known_good_source: '',
+    qty_per_person_per_day: 0, unit: 'g', people_served: 5, frequency: 'weekly',
+    price: 0, price_ceiling: 0, payment_mode: 'UPI', payment_owner: 'Ritika',
+    current_stock: 0, stock_updated_at: t, reserve_units: 0, backstock_target: 1,
+    storage_ceiling: 0, unit_size: 0, usual_order_qty: 0,
+    vendor_lead_time_days: 2, buffer_days: 2,
+    replenish_note: '', blacklist: { flag: false, reason: '' }, status: 'vetted', seed: true
+  }, o);
+  return {
+    schemaVersion: 1,
+    items: [
+      mk({ item: 'Almonds', vendor: 'Zama Organics', known_good_source: 'Zama house brand', qty_per_person_per_day: 10, price: 450, price_ceiling: 550, current_stock: 180, reserve_units: 0, storage_ceiling: 1000, unit_size: 500, usual_order_qty: 500 }),
+      mk({ item: 'Cashews', vendor: 'Zama Organics', known_good_source: 'Zama house brand', qty_per_person_per_day: 8, price: 380, price_ceiling: 480, current_stock: 600, reserve_units: 1, storage_ceiling: 1000, unit_size: 500, usual_order_qty: 500 }),
+      mk({ item: 'Walnuts', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 6, price: 520, price_ceiling: 650, current_stock: 500, reserve_units: 1, storage_ceiling: 800, unit_size: 400, usual_order_qty: 400 }),
+      mk({ item: 'Pumpkin seeds', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 5, price: 300, price_ceiling: 380, current_stock: 60, reserve_units: 0, storage_ceiling: 500, unit_size: 250, usual_order_qty: 250 }),
+      mk({ item: 'Sunflower seeds', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 5, price: 220, price_ceiling: 300, current_stock: 400, reserve_units: 1, storage_ceiling: 600, unit_size: 250, usual_order_qty: 250 }),
+      mk({ item: 'Sesame seeds', vendor: 'GRN Organics', known_good_source: 'GRN loose (vetted)', qty_per_person_per_day: 4, price: 90, price_ceiling: 140, current_stock: 350, reserve_units: 1, storage_ceiling: 500, unit_size: 250, usual_order_qty: 250 }),
+      mk({ item: 'Raisins', vendor: 'Blinkit', known_good_source: 'Happilo', qty_per_person_per_day: 8, price: 160, price_ceiling: 220, current_stock: 100, reserve_units: 0, storage_ceiling: 750, unit_size: 250, usual_order_qty: 500 }),
+      mk({ item: 'Dates', vendor: 'Nature\'s', known_good_source: 'Nature\'s (vetted)', qty_per_person_per_day: 15, price: 350, price_ceiling: 450, current_stock: 900, reserve_units: 1, storage_ceiling: 1500, unit_size: 500, usual_order_qty: 500 }),
+      mk({ item: 'Turmeric powder', category: 'herbs-supplements', vendor: 'Blinkit', known_good_source: 'Brand X', qty_per_person_per_day: 2, price: 120, price_ceiling: 200, current_stock: 30, reserve_units: 0, storage_ceiling: 400, unit_size: 200, usual_order_qty: 200, blacklist: { flag: true, reason: 'Brand X blacklisted — opaque sourcing (example)' } }),
+      mk({ item: 'Moringa powder', category: 'herbs-supplements', vendor: 'Zama Organics', known_good_source: 'new supplier — on trial', qty_per_person_per_day: 3, price: 250, price_ceiling: 300, current_stock: 20, reserve_units: 0, storage_ceiling: 300, unit_size: 100, usual_order_qty: 200, status: 'trial' })
+    ],
+    log: [],
+    digest_decisions: {}
+  };
+}
+
+/* ---------- state ---------- */
+let memoryState = null; // fallback when localStorage is unavailable (sandboxed iframe)
+let storageOk = true;
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return defaultState();
+    const s = JSON.parse(raw);
+    if (!s || s.schemaVersion !== 1 || !Array.isArray(s.items)) return defaultState();
+    return s;
+  } catch (e) {
+    storageOk = false;
+    return memoryState || defaultState();
+  }
+}
+function saveState(state) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    storageOk = false;
+    memoryState = state; // keep the session alive; banner warns about persistence
+  }
+}
+
+/* ---------- computed ---------- */
+function dailyConsumption(item) {
+  return (Number(item.qty_per_person_per_day) || 0) * (Number(item.people_served) || 0);
+}
+function daysSinceUpdate(item, now = new Date()) {
+  const anchor = new Date(item.stock_updated_at + 'T00:00:00');
+  return Math.max(0, Math.floor((now - anchor) / MS_PER_DAY));
+}
+function effectiveStock(item, now = new Date()) {
+  return Math.max(0, (Number(item.current_stock) || 0) - dailyConsumption(item) * daysSinceUpdate(item, now));
+}
+function daysRemaining(item, now = new Date()) {
+  const dc = dailyConsumption(item);
+  if (dc <= 0) return Infinity;
+  return effectiveStock(item, now) / dc;
+}
+function reorderTriggerDays(item) {
+  return (Number(item.vendor_lead_time_days) || 0) + (Number(item.buffer_days) || 0);
+}
+function isTriggered(item, now = new Date()) {
+  return daysRemaining(item, now) <= reorderTriggerDays(item);
+}
+function runOutDate(item, now = new Date()) {
+  const d = daysRemaining(item, now);
+  if (!isFinite(d)) return null;
+  return new Date(now.getTime() + d * MS_PER_DAY);
+}
+function proposedQty(item, now = new Date()) {
+  const headroom = (Number(item.storage_ceiling) || 0) - effectiveStock(item, now);
+  let usual = Number(item.usual_order_qty) || 0;
+  if (item.status === 'trial') usual = Math.min(usual || Infinity, Number(item.unit_size) || usual); // trial: one pack max, never full
+  return Math.max(0, Math.min(usual, Math.max(0, headroom)));
+}
+function backstockOk(item) {
+  return (Number(item.reserve_units) || 0) >= (Number(item.backstock_target) || 1);
+}
+/* Lane rules — STOP is inert, ASK needs review, AUTO is one-tap (v1: still human-approved) */
+function computeLane(item, now = new Date()) {
+  const qty = proposedQty(item, now);
+  if (item.blacklist && item.blacklist.flag) return { lane: 'STOP', reason: item.blacklist.reason || 'Blacklisted' };
+  if (qty <= 0) return { lane: 'STOP', reason: 'Storage ceiling reached — ordering more would exceed what stores well. Held.' };
+  const reasons = [];
+  if (item.status === 'trial') reasons.push('trial item — small order, one new thing at a time');
+  if (Number(item.price_ceiling) > 0 && Number(item.price) > Number(item.price_ceiling)) reasons.push('price ₹' + item.price + ' is above the ₹' + item.price_ceiling + ' ceiling');
+  const usual = Number(item.usual_order_qty) || 0;
+  if (item.status !== 'trial' && usual > 0 && Math.abs(qty - usual) / usual > 0.2) reasons.push('proposed ' + qty + item.unit + ' differs from usual ' + usual + item.unit);
+  if (reasons.length) return { lane: 'ASK', reason: reasons.join(' · ') };
+  return { lane: 'AUTO', reason: 'known-good repeat — usual source, quantity, and price' };
+}
+function buildDigestLines(state, now = new Date()) {
+  const decisions = state.digest_decisions[todayKey(now)] || {};
+  // decided lines stay visible all day (approving bumps stock, which un-triggers the item)
+  return state.items
+    .filter(it => (dailyConsumption(it) > 0 && isTriggered(it, now)) || decisions[it.id])
+    .map(it => ({ item: it, qty: proposedQty(it, now), laneInfo: computeLane(it, now), decision: decisions[it.id] || null }))
+    .sort((a, b) => daysRemaining(a.item, now) - daysRemaining(b.item, now));
+}
+
+/* ---------- mutations ---------- */
+function approveDigestLine(state, itemId, overrides, now = new Date()) {
+  const item = state.items.find(i => i.id === itemId);
+  if (!item) return;
+  const laneInfo = computeLane(item, now);
+  if (laneInfo.lane === 'STOP') return; // STOP lines are never orderable
+  let qty = overrides && overrides.qty != null ? Number(overrides.qty) : proposedQty(item, now);
+  if (!isFinite(qty) || qty < 0) return;
+  const headroom = (Number(item.storage_ceiling) || 0) - effectiveStock(item, now);
+  qty = Math.max(0, Math.min(qty, Math.max(0, headroom))); // ceiling is a hard cap, even on adjusted lines
+  if (item.status === 'trial') qty = Math.min(qty, proposedQty(item, now)); // AC6: trial cap holds even via Adjust
+  if (qty <= 0) return;
+  if (overrides && overrides.vendor) item.vendor = overrides.vendor;
+  if (overrides && overrides.price != null && overrides.price !== '') item.price = Number(overrides.price);
+  if (overrides && overrides.qty != null && item.status !== 'trial') item.usual_order_qty = qty; // corrections stick
+  const days = daysRemaining(item, now);
+  state.log.unshift({
+    id: uid(), date: todayKey(now), item_id: item.id, item_name: item.item,
+    qty: qty, unit: item.unit, vendor: item.vendor, price: Number(item.price) || 0,
+    payment_owner: item.payment_owner, payment_mode: item.payment_mode,
+    reason: laneInfo.lane + ' · ' + (isFinite(days) ? Math.floor(days) + ' days left' : 'manual') + ', lead ' + (item.vendor_lead_time_days || 0) + 'd + buffer ' + (item.buffer_days || 0) + 'd'
+  });
+  // ponytail: approval = stock arrives instantly; a real "received" step comes with P3 Gmail order-scouting
+  item.current_stock = effectiveStock(item, now) + qty;
+  item.stock_updated_at = todayKey(now);
+  recordDecision(state, itemId, { action: 'approved', qty: qty }, now);
+}
+function skipDigestLine(state, itemId, now = new Date()) {
+  recordDecision(state, itemId, { action: 'skipped' }, now); // today only; re-triggers tomorrow if still low
+}
+function recordDecision(state, itemId, decision, now = new Date()) {
+  const k = todayKey(now);
+  if (!state.digest_decisions[k]) state.digest_decisions[k] = {};
+  state.digest_decisions[k][itemId] = decision;
+  saveState(state);
+}
+function upsertItem(state, data) {
+  const existing = data.id ? state.items.find(i => i.id === data.id) : null;
+  const prev = existing || defaultState().items[0]; // defaults for unset numeric fields
+  const stockChanged = !existing || Number(data.current_stock) !== Number(existing.current_stock);
+  const next = {
+    id: existing ? existing.id : uid(),
+    item: data.item.trim(), category: data.category, houses: 'shared-pool',
+    vendor: data.vendor.trim(), known_good_source: data.known_good_source.trim(),
+    qty_per_person_per_day: Number(data.qty_per_person_per_day) || 0, unit: data.unit,
+    people_served: Number(data.people_served) || 5, frequency: data.frequency.trim(),
+    price: Number(data.price) || 0, price_ceiling: Number(data.price_ceiling) || 0,
+    payment_mode: data.payment_mode.trim(), payment_owner: data.payment_owner.trim(),
+    current_stock: Number(data.current_stock) || 0,
+    stock_updated_at: stockChanged ? todayKey() : existing.stock_updated_at,
+    reserve_units: Number(data.reserve_units) || 0,
+    backstock_target: data.backstock_target === '' || data.backstock_target == null ? 1 : Number(data.backstock_target),
+    storage_ceiling: Number(data.storage_ceiling) || 0, unit_size: Number(data.unit_size) || 0,
+    usual_order_qty: Number(data.usual_order_qty) || 0,
+    vendor_lead_time_days: Number(data.vendor_lead_time_days) || 0, buffer_days: Number(data.buffer_days) || 0,
+    replenish_note: data.replenish_note.trim(),
+    blacklist: { flag: !!data.blacklist_flag, reason: data.blacklist_reason.trim() },
+    status: data.blacklist_flag ? 'blacklisted' : data.status,
+    seed: false // any human edit clears the "example" tag
+  };
+  if (existing) Object.assign(existing, next); else state.items.push(next);
+  saveState(state);
+}
+
+/* ---------- render ---------- */
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmtDate = d => d ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—';
+const fmtDays = n => !isFinite(n) ? '—' : (n < 1 ? '<1' : String(Math.floor(n)));
+let currentTab = 'digest';
+
+function render(state) {
+  const view = document.getElementById('view');
+  const titles = { digest: 'Morning digest', items: 'Items — shared pool', log: 'Order log' };
+  document.getElementById('pageTitle').textContent = titles[currentTab];
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
+  const banners = renderBanners(state);
+  if (currentTab === 'digest') view.innerHTML = banners + renderDigestView(state);
+  else if (currentTab === 'items') view.innerHTML = banners + renderItemsView(state);
+  else view.innerHTML = banners + renderLogView(state);
+  const pending = buildDigestLines(state).filter(l => !l.decision && l.laneInfo.lane !== 'STOP').length;
+  const badge = document.getElementById('digestBadge');
+  badge.hidden = pending === 0;
+  badge.textContent = pending;
+}
+function renderBanners(state) {
+  let html = '';
+  if (!storageOk) html += '<div class="note">Heads up: this device isn’t saving between visits. Your changes work now but may reset when you close the page — use “Save file” to keep a copy.</div>';
+  if (state.items.some(i => i.seed)) html += '<div class="note quiet">The items below are <span class="chip ex">example</span> ones with made-up numbers, just to show how it works. Tap an item, then <b>Edit</b>, to put in your real amounts — the <span class="chip ex">example</span> tag disappears once you do.</div>';
+  return html;
+}
+function renderDigestView(state) {
+  const lines = buildDigestLines(state);
+  if (!lines.length) return '<div class="empty">Nothing needs ordering today. The digest fills in when an item’s days-remaining dips below its lead time + buffer.</div>';
+  return lines.map(l => {
+    const it = l.item, lane = l.laneInfo.lane;
+    const days = daysRemaining(it), trig = reorderTriggerDays(it);
+    const vnote = VENDOR_NOTES[it.vendor] ? ' <span class="chip">' + esc(VENDOR_NOTES[it.vendor]) + '</span>' : '';
+    const head = '<div class="row"><div><h3>' + esc(it.item) + (it.seed ? ' <span class="chip ex">example</span>' : '') + '</h3>' +
+      '<span class="sub">' + esc(it.vendor || 'no vendor set') + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + '</span></div>' +
+      '<span class="flag ' + lane.toLowerCase() + '">' + lane + '</span></div>';
+    if (l.decision) {
+      const what = l.decision.action === 'approved' ? 'Approved — ' + l.decision.qty + esc(it.unit) + ' ordered and logged' : 'Skipped for today';
+      return '<div class="card resolved">' + head + '<p class="why">' + what + '. Back tomorrow if still low.</p></div>';
+    }
+    if (lane === 'STOP') {
+      return '<div class="card">' + head +
+        '<p class="stop-reason">⛔ ' + esc(l.laneInfo.reason) + '</p>' +
+        '<p class="why">Not orderable. Edit the item (Items tab) to choose differently — the hold clears when the reason does.</p></div>';
+    }
+    const why = fmtDays(days) + ' day' + (days >= 2 ? 's' : '') + ' left · trigger at ' + trig + 'd (lead ' + (it.vendor_lead_time_days || 0) + 'd + buffer ' + (it.buffer_days || 0) + 'd)';
+    return '<div class="card" data-line="' + it.id + '">' + head +
+      '<div class="kpis"><span class="kpi">Proposed <b>' + l.qty + esc(it.unit) + '</b></span>' +
+      '<span class="kpi">₹<b>' + esc(it.price) + '</b> · ' + esc(it.payment_mode) + ' · ' + esc(it.payment_owner) + vnote + '</span></div>' +
+      '<p class="why">' + esc(why) + (lane === 'ASK' ? ' · ' + esc(l.laneInfo.reason) : '') + '</p>' +
+      '<div class="actions">' +
+        '<button class="btn" data-action="approve" data-id="' + it.id + '">Approve ' + l.qty + esc(it.unit) + '</button>' +
+        '<button class="btn ghost" data-action="toggle-adjust" data-id="' + it.id + '">Adjust</button>' +
+        '<button class="btn ghost" data-action="skip" data-id="' + it.id + '">Skip today</button>' +
+      '</div>' +
+      '<div class="adjust" id="adjust-' + it.id + '">' +
+        '<label for="adj-qty-' + it.id + '">Quantity (' + esc(it.unit) + ') — ceiling caps it</label><input id="adj-qty-' + it.id + '" type="number" min="0" step="any" value="' + l.qty + '">' +
+        '<label for="adj-vendor-' + it.id + '">Vendor</label><input id="adj-vendor-' + it.id + '" list="vendorList" value="' + esc(it.vendor) + '">' +
+        '<label for="adj-price-' + it.id + '">Price (₹)</label><input id="adj-price-' + it.id + '" type="number" min="0" step="any" value="' + esc(it.price) + '">' +
+        '<div class="actions"><button class="btn" data-action="approve-adjusted" data-id="' + it.id + '">Approve adjusted</button></div>' +
+      '</div></div>';
+  }).join('');
+}
+function renderItemsView(state) {
+  const rows = state.items.map(it => {
+    const days = daysRemaining(it);
+    const lane = computeLane(it).lane;
+    const stockChip = backstockOk(it) ? '<span class="chip ok">reserve ✓</span>' : '<span class="chip warn">no reserve</span>';
+    const badge = it.blacklist.flag ? ' <span class="flag stop">STOP</span>' : (it.status === 'trial' ? ' <span class="chip">trial</span>' : '');
+    return '<div class="card" data-item-card="' + it.id + '">' +
+      '<div class="row"><div><h3>' + esc(it.item) + (it.seed ? ' <span class="chip ex">example</span>' : '') + badge + '</h3>' +
+      '<span class="sub">' + esc(it.vendor) + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + '</span></div>' + stockChip + '</div>' +
+      '<div class="kpis">' +
+      '<span class="kpi">Stock ≈ <b>' + Math.round(effectiveStock(it)) + esc(it.unit) + '</b></span>' +
+      '<span class="kpi"><b>' + fmtDays(days) + '</b> days left</span>' +
+      '<span class="kpi">runs out ~<b>' + fmtDate(runOutDate(it)) + '</b></span>' +
+      '<span class="kpi">uses <b>' + dailyConsumption(it) + esc(it.unit) + '</b>/day</span>' +
+      (isTriggered(it) && lane !== 'STOP' ? '<span class="kpi"><b>in today’s digest</b></span>' : '') +
+      '</div>' +
+      (it.replenish_note ? '<p class="why">♻︎ ' + esc(it.replenish_note) + '</p>' : '') +
+      '<div class="actions"><button class="btn ghost small" data-action="edit-item" data-id="' + it.id + '">Edit</button>' +
+      '<button class="btn ghost small" data-action="update-stock" data-id="' + it.id + '">Update stock</button></div>' +
+      '</div>';
+  }).join('');
+  return '<div class="actions" style="margin:0 0 14px;"><button class="btn" data-action="add-item">+ Add item</button></div>' + (rows || '<div class="empty">No items yet — add the first one.</div>');
+}
+function renderLogView(state) {
+  if (!state.log.length) return '<div class="empty">No orders yet. Approvals from the digest land here — what, from where, why, at what price.</div>';
+  const rows = state.log.map(e =>
+    '<tr><td>' + esc(e.date) + '</td><td>' + esc(e.item_name) + '</td><td>' + e.qty + esc(e.unit) + '</td><td>' + esc(e.vendor) + '</td><td>₹' + esc(e.price) + '</td><td>' + esc(e.payment_owner) + ' · ' + esc(e.payment_mode) + '</td><td>' + esc(e.reason) + '</td></tr>'
+  ).join('');
+  return '<div class="tablewrap"><table><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>From</th><th>Price</th><th>Paid by</th><th>Why</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+/* ---------- item dialog ---------- */
+function openItemDialog(state, itemId) {
+  const dlg = document.getElementById('itemDialog');
+  const form = document.getElementById('itemForm');
+  form.reset();
+  const it = itemId ? state.items.find(i => i.id === itemId) : null;
+  document.getElementById('dialogTitle').textContent = it ? 'Edit — ' + it.item : 'Add item';
+  const set = (n, v) => { if (form.elements[n]) form.elements[n].value = v == null ? '' : v; };
+  if (it) {
+    set('id', it.id); set('item', it.item); set('category', it.category);
+    set('status', it.status === 'blacklisted' ? 'vetted' : it.status);
+    set('qty_per_person_per_day', it.qty_per_person_per_day); set('unit', it.unit);
+    set('people_served', it.people_served); set('frequency', it.frequency);
+    set('current_stock', it.current_stock); set('reserve_units', it.reserve_units);
+    set('backstock_target', it.backstock_target); set('unit_size', it.unit_size); set('storage_ceiling', it.storage_ceiling);
+    set('vendor', it.vendor); set('known_good_source', it.known_good_source);
+    set('usual_order_qty', it.usual_order_qty); set('vendor_lead_time_days', it.vendor_lead_time_days);
+    set('buffer_days', it.buffer_days); set('price', it.price); set('price_ceiling', it.price_ceiling);
+    set('payment_mode', it.payment_mode); set('payment_owner', it.payment_owner);
+    set('replenish_note', it.replenish_note); set('blacklist_reason', it.blacklist.reason);
+    form.elements.blacklist_flag.checked = it.blacklist.flag;
+  } else {
+    set('id', ''); set('people_served', 5); set('vendor_lead_time_days', 2); set('buffer_days', 2);
+    set('payment_owner', 'Ritika'); set('payment_mode', 'UPI');
+  }
+  dlg.showModal();
+}
+
+/* ---------- export / import ---------- */
+function exportJSON(state) {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'home-os-' + todayKey() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function importJSON(text) {
+  let s;
+  try { s = JSON.parse(text); } catch (e) { alert('That file isn’t readable as Home OS data — nothing was changed.'); return null; }
+  if (!s || s.schemaVersion !== 1 || !Array.isArray(s.items)) { alert('That file isn’t Home OS v1 data — nothing was changed.'); return null; }
+  saveState(s);
+  return s;
+}
+
+/* ---------- events (one delegated listener) ---------- */
+let state = loadState();
+saveState(state); // persist seed on first visit
+
+document.addEventListener('click', (ev) => {
+  const btn = ev.target.closest('[data-action]');
+  if (!btn) return;
+  const id = btn.dataset.id;
+  switch (btn.dataset.action) {
+    case 'approve': approveDigestLine(state, id); render(state); break;
+    case 'approve-adjusted': {
+      approveDigestLine(state, id, {
+        qty: document.getElementById('adj-qty-' + id).value,
+        vendor: document.getElementById('adj-vendor-' + id).value.trim(),
+        price: document.getElementById('adj-price-' + id).value
+      });
+      render(state); break;
+    }
+    case 'toggle-adjust': document.getElementById('adjust-' + id).classList.toggle('open'); break;
+    case 'skip': skipDigestLine(state, id); render(state); break;
+    case 'add-item': openItemDialog(state, null); break;
+    case 'edit-item': openItemDialog(state, id); break;
+    case 'update-stock': {
+      const it = state.items.find(i => i.id === id);
+      const v = prompt('Stock now for ' + it.item + ' (' + it.unit + ', open + reserve):', Math.round(effectiveStock(it)));
+      if (v !== null && v.trim() !== '' && isFinite(Number(v))) {
+        it.current_stock = Math.max(0, Number(v));
+        it.stock_updated_at = todayKey();
+        it.seed = false;
+        saveState(state); render(state);
+      }
+      break;
+    }
+    case 'export': exportJSON(state); break;
+    case 'import': document.getElementById('importFile').click(); break;
+    case 'dialog-cancel': document.getElementById('itemDialog').close('cancel'); break;
+  }
+});
+document.querySelectorAll('nav.tabs button').forEach(b =>
+  b.addEventListener('click', () => { currentTab = b.dataset.tab; render(state); })
+);
+document.getElementById('importFile').addEventListener('change', (ev) => {
+  const f = ev.target.files[0];
+  if (!f) return;
+  f.text().then(text => {
+    const s = importJSON(text);
+    if (s) { state = s; render(state); }
+    ev.target.value = '';
+  });
+});
+document.getElementById('itemForm').addEventListener('submit', (ev) => {
+  const form = ev.target;
+  if (!form.elements.item.value.trim()) { ev.preventDefault(); form.elements.item.focus(); return; }
+  const data = {};
+  ['id','item','category','status','qty_per_person_per_day','unit','people_served','frequency',
+   'current_stock','reserve_units','backstock_target','unit_size','storage_ceiling','vendor','known_good_source',
+   'usual_order_qty','vendor_lead_time_days','buffer_days','price','price_ceiling',
+   'payment_mode','payment_owner','replenish_note','blacklist_reason'].forEach(n => data[n] = form.elements[n].value);
+  data.blacklist_flag = form.elements.blacklist_flag.checked;
+  upsertItem(state, data);
+  render(state);
+});
+
+render(state);
+
+/* ---------- self-check (open with #selftest) ---------- */
+function runSelfTest() {
+  const t = todayKey();
+  const item = { qty_per_person_per_day: 10, people_served: 5, unit: 'g', current_stock: 350, stock_updated_at: t,
+    storage_ceiling: 1000, usual_order_qty: 500, unit_size: 500, vendor_lead_time_days: 2, buffer_days: 2,
+    price: 450, price_ceiling: 550, status: 'vetted', blacklist: { flag: false, reason: '' }, reserve_units: 1, backstock_target: 1 };
+  const results = [];
+  const ok = (name, cond) => results.push((cond ? 'PASS' : 'FAIL') + ' ' + name);
+  ok('daily consumption', dailyConsumption(item) === 50);
+  ok('days remaining', daysRemaining(item) === 7);
+  ok('not triggered at 7d vs 4d trigger', !isTriggered(item));
+  const old = Object.assign({}, item, { stock_updated_at: '2000-01-01' });
+  ok('stock decays over time', effectiveStock(old) === 0 && isTriggered(old));
+  ok('AC4 ceiling clamp', proposedQty(Object.assign({}, item, { current_stock: 700 })) === 300);
+  ok('AC3 trigger boundary', isTriggered(Object.assign({}, item, { current_stock: 200 })));  // 4d = trigger
+  ok('AC5 blacklist is STOP', computeLane(Object.assign({}, item, { blacklist: { flag: true, reason: 'x' } })).lane === 'STOP');
+  ok('AC6 trial caps at one pack', proposedQty(Object.assign({}, item, { status: 'trial', current_stock: 0, unit_size: 100, usual_order_qty: 500 })) === 100);
+  ok('trial lane is ASK', computeLane(Object.assign({}, item, { status: 'trial' })).lane === 'ASK');
+  ok('price over ceiling is ASK', computeLane(Object.assign({}, item, { price: 600 })).lane === 'ASK');
+  ok('vetted usual is AUTO', computeLane(item).lane === 'AUTO');
+  ok('over-ceiling stock is STOP', computeLane(Object.assign({}, item, { current_stock: 1000 })).lane === 'STOP');
+  ok('backstock ok', backstockOk(item) === true && backstockOk(Object.assign({}, item, { reserve_units: 0 })) === false);
+  const st = { items: [Object.assign({}, item, { id: 'x', item: 'T', vendor: 'V', payment_owner: 'R', payment_mode: 'UPI', current_stock: 100 })], log: [], digest_decisions: {} };
+  approveDigestLine(st, 'x');
+  ok('AC8 approve writes full log entry', st.log.length === 1 && st.log[0].qty === 500 && st.log[0].payment_owner === 'R' && st.log[0].payment_mode === 'UPI' && st.log[0].price === 450);
+  ok('approve bumps stock', st.items[0].current_stock === 600);
+  ok('decision recorded for today', !!st.digest_decisions[t] && st.digest_decisions[t]['x'].action === 'approved');
+  const failed = results.filter(r => r.startsWith('FAIL'));
+  console.log('Home OS self-test:\n' + results.join('\n'));
+  alert('Self-test: ' + (results.length - failed.length) + '/' + results.length + ' passed' + (failed.length ? '\n' + failed.join('\n') : ''));
+}
+if (location.hash === '#selftest') runSelfTest();
+</script>
+</body>
+</html>
