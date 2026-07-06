@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home OS — v1</title>
+<title>Home OS — v2</title>
 <style>
   :root{
     --ink:#1c1a17; --ink-soft:#4a453e;
@@ -24,7 +24,9 @@
   header{padding:22px 0 14px;border-bottom:2px solid var(--ink);display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;}
   header h1{font-size:22px;margin:0;font-weight:600;letter-spacing:-.01em;}
   .eyebrow{font-family:var(--mono);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--sage);display:block;margin-bottom:2px;}
-  .hdr-actions{display:flex;gap:8px;}
+  .hdr-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
+  .who{font-family:var(--mono);font-size:11px;color:var(--ink-soft);}
+  .who button{appearance:none;border:none;background:none;color:var(--amber);font-family:var(--mono);font-size:11px;cursor:pointer;padding:0;text-decoration:underline;}
 
   nav.tabs{display:flex;gap:0;border-bottom:1px solid var(--line);margin-bottom:16px;position:sticky;top:0;background:var(--paper);z-index:5;}
   nav.tabs button{
@@ -41,6 +43,7 @@
 
   .note{background:var(--amber-soft);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:0 3px 3px 0;padding:10px 14px;font-size:14px;margin:0 0 16px;}
   .note.quiet{background:var(--panel);border-left-color:var(--sage);}
+  .note.alert{background:var(--clay-soft);border-left-color:var(--clay);}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:14px 16px;margin:0 0 12px;}
   .card h3{margin:0 0 2px;font-size:17px;font-weight:600;}
@@ -64,16 +67,27 @@
     border:1px solid var(--ink);background:var(--ink);color:var(--paper);
     border-radius:3px;padding:9px 14px;cursor:pointer;
   }
+  a.btn{display:inline-block;font-family:var(--mono);font-size:12px;letter-spacing:.06em;border:1px solid var(--ink);background:none;color:var(--ink);border-radius:3px;padding:9px 14px;text-decoration:none;}
   button.btn.ghost{background:none;color:var(--ink);}
-  button.btn.small{padding:6px 10px;font-size:11px;}
-  button.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+  button.btn.small,a.btn.small{padding:6px 10px;font-size:11px;}
+  button.btn.primary{background:var(--sage);border-color:var(--sage);}
+  button.btn:focus-visible,a.btn:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
   button.btn:disabled{opacity:.45;cursor:not-allowed;}
   .actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;}
 
   .why{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin:6px 0 0;}
   .stop-reason{color:var(--clay);font-size:13.5px;margin:6px 0 0;}
   .resolved{opacity:.62;}
-  .resolved .flag{filter:grayscale(.4);}
+
+  .basket{border:1.5px solid var(--sage);border-radius:3px;background:var(--sage-soft);padding:14px 16px;margin:0 0 16px;}
+  .basket h2{margin:0 0 2px;font-size:18px;}
+  .basket .b-sub{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin:0 0 10px;}
+  .basket .vcard{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:12px 14px;margin:10px 0 0;}
+  .basket pre{
+    background:var(--paper);border:1px dashed var(--line);border-radius:3px;
+    padding:10px 12px;font-family:var(--mono);font-size:12.5px;line-height:1.6;
+    white-space:pre-wrap;word-break:break-word;margin:8px 0 0;overflow-x:auto;
+  }
 
   .adjust{display:none;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);}
   .adjust.open{display:block;}
@@ -84,7 +98,7 @@
     font-family:inherit;font-size:15px;color:var(--ink);
     background:var(--paper);border:1px solid var(--line);border-radius:3px;padding:8px 10px;
   }
-  input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--amber);outline-offset:0;}
+  input:focus-visible,select:focus-visible{outline:2px solid var(--amber);outline-offset:0;}
 
   dialog{
     border:1px solid var(--ink);border-radius:4px;padding:0;
@@ -92,7 +106,7 @@
     background:var(--panel);color:var(--ink);
   }
   dialog::backdrop{background:rgba(28,26,23,.45);}
-  dialog form{padding:18px 18px 14px;}
+  dialog form,.dlg-body{padding:18px 18px 14px;}
   dialog h2{margin:0 0 4px;font-size:20px;}
   dialog .d-sub{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin:0 0 12px;}
   fieldset{border:1px solid var(--line);border-radius:3px;margin:0 0 12px;padding:10px 12px 12px;}
@@ -106,6 +120,11 @@
   .check input{width:auto;}
   .d-actions{display:flex;justify-content:space-between;gap:8px;margin-top:4px;flex-wrap:wrap;}
 
+  .fractions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+  .fractions button{flex:1;min-width:56px;font-size:15px;padding:14px 8px;}
+
+  .namegrid{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0;}
+
   .tablewrap{overflow-x:auto;margin:0 0 14px;}
   table{width:100%;border-collapse:collapse;font-size:14px;}
   th,td{text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);vertical-align:top;}
@@ -113,9 +132,10 @@
   td{font-variant-numeric:tabular-nums;}
 
   .empty{padding:32px 10px;text-align:center;color:var(--ink-soft);font-style:italic;}
-  footer{margin-top:26px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);line-height:1.7;}
+  footer{margin-top:26px;font-family:var(--mono);font-size:11px;color:var(--ink-soft);line-height:1.7;word-break:break-all;}
+  .center{max-width:480px;margin:60px auto;text-align:center;}
+  .center h2{font-size:24px;}
   @media (max-width:480px){ .grid{grid-template-columns:1fr;} header h1{font-size:19px;} }
-  @media (prefers-reduced-motion:no-preference){ .card{transition:opacity .18s ease;} }
 </style>
 </head>
 <body>
@@ -123,17 +143,17 @@
 
 <header>
   <div>
-    <span class="eyebrow">Home OS · v1 prototype</span>
+    <span class="eyebrow">Home OS · v2</span>
     <h1 id="pageTitle">Morning digest</h1>
   </div>
   <div class="hdr-actions">
-    <button class="btn ghost small" data-action="export" title="Save a copy to send to Srijan as feedback">Send to Srijan</button>
-    <button class="btn ghost small" data-action="import" title="Load a copy back in">Load a copy</button>
+    <span class="who" id="whoBox"></span>
+    <button class="btn ghost small" data-action="export" title="Save a backup copy of everything">Backup</button>
     <input type="file" id="importFile" accept="application/json" hidden>
   </div>
 </header>
 
-<nav class="tabs" aria-label="Views">
+<nav class="tabs" aria-label="Views" id="tabsNav">
   <button data-tab="digest" class="active">Digest<span class="badge" id="digestBadge" hidden></span></button>
   <button data-tab="items">Items</button>
   <button data-tab="log">Log</button>
@@ -141,10 +161,7 @@
 
 <main id="view" aria-live="polite"></main>
 
-<footer>
-  Your changes stay on this device. When you're ready, tap <b>Send to Srijan</b> (top right) to save a copy and share it — your edits become the next version.<br>
-  Home OS v1 · shared-pool tracker · built from the PRD + Ritika's restocking brief.
-</footer>
+<footer id="footerBox"></footer>
 </div>
 
 <dialog id="itemDialog">
@@ -152,7 +169,6 @@
     <h2 id="dialogTitle">Edit item</h2>
     <p class="d-sub">Everything is editable — columns grow as needs grow.</p>
     <input type="hidden" name="id">
-
     <fieldset>
       <legend>Basics</legend>
       <div class="grid">
@@ -174,7 +190,6 @@
         </div>
       </div>
     </fieldset>
-
     <fieldset>
       <legend>Consumption</legend>
       <div class="grid">
@@ -186,7 +201,6 @@
         <div class="field"><label for="f-frequency">Ordering rhythm</label><input id="f-frequency" name="frequency" placeholder="e.g. weekly"></div>
       </div>
     </fieldset>
-
     <fieldset>
       <legend>Stock</legend>
       <div class="grid">
@@ -197,7 +211,6 @@
         <div class="field"><label for="f-ceiling">Storage ceiling (max to hold)</label><input id="f-ceiling" name="storage_ceiling" type="number" min="0" step="any"></div>
       </div>
     </fieldset>
-
     <fieldset>
       <legend>Ordering</legend>
       <div class="grid">
@@ -212,7 +225,6 @@
         <div class="field"><label for="f-payowner">Payment owner</label><input id="f-payowner" name="payment_owner"></div>
       </div>
     </fieldset>
-
     <fieldset>
       <legend>Values</legend>
       <div class="grid">
@@ -221,7 +233,6 @@
         <div class="field full"><label for="f-blreason">Blacklist reason</label><input id="f-blreason" name="blacklist_reason"></div>
       </div>
     </fieldset>
-
     <div class="d-actions">
       <button type="button" class="btn ghost" data-action="dialog-cancel">Cancel</button>
       <button type="submit" class="btn" value="save">Save item</button>
@@ -229,16 +240,57 @@
   </form>
 </dialog>
 
+<dialog id="quickDialog">
+  <form id="quickForm" method="dialog" novalidate>
+    <h2>Add an item</h2>
+    <p class="d-sub">Just the basics — fine-tune later with Edit.</p>
+    <div class="grid">
+      <div class="field full"><label for="q-item">What is it?</label><input id="q-item" name="item" required placeholder="e.g. Pistachios"></div>
+      <div class="field"><label for="q-vendor">Where do you buy it?</label><input id="q-vendor" name="vendor" list="vendorList"></div>
+      <div class="field"><label for="q-pack">Pack size</label><input id="q-pack" name="pack" type="number" min="0" step="any" placeholder="500"></div>
+      <div class="field"><label for="q-unit">Unit</label><select id="q-unit" name="unit"><option>g</option><option>ml</option><option>pcs</option></select></div>
+      <div class="field"><label for="q-daily">The house uses per day (total)</label><input id="q-daily" name="daily" type="number" min="0" step="any" placeholder="50"></div>
+    </div>
+    <div class="d-actions">
+      <button type="button" class="btn ghost" data-action="dialog-cancel-quick">Cancel</button>
+      <button type="submit" class="btn">Add</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="stockDialog">
+  <div class="dlg-body" id="stockBody"></div>
+</dialog>
+
+<dialog id="whoDialog">
+  <div class="dlg-body">
+    <h2>Who's using this device?</h2>
+    <p class="d-sub">So stock checks and orders say who did them.</p>
+    <div class="namegrid" id="nameGrid"></div>
+    <input id="whoFree" placeholder="or type a name" style="width:100%;">
+    <div class="d-actions" style="margin-top:12px;">
+      <span></span>
+      <button class="btn" data-action="who-save">That's me</button>
+    </div>
+  </div>
+</dialog>
+
 <script>
 'use strict';
-/* ===== Home OS v1 — shared-pool tracker =====
-   Single file, no dependencies. State in localStorage (in-memory fallback).
-   All quantity math in raw units (g/ml/pcs); packs only at display layer. */
+/* ===== Home OS v2 — shared household tracker with sendable vendor orders =====
+   Single file. Shared state via Supabase PostgREST (plain fetch, no client lib);
+   graceful local-only mode when unconfigured/offline. All qty math in raw units. */
 
-const STORAGE_KEY = 'homeOS_v1';
+/* ---- wire these at deploy; empty = local-only mode ---- */
+const SUPABASE_URL = '';
+const SUPABASE_ANON_KEY = '';
+
+const CACHE_KEY = 'homeOS_v2';
+const V1_KEY = 'homeOS_v1';
+const WHO_KEY = 'homeOS_who';
 const MS_PER_DAY = 86400000;
-// null-prototype so a vendor named "constructor"/"toString" can't inherit a truthy note
-const VENDOR_NOTES = Object.assign(Object.create(null), { // payment constraints from the PRD
+const FAMILY = ['Ritika', 'Sia', 'Swapnali', 'Srijan'];
+const VENDOR_NOTES = Object.assign(Object.create(null), {
   'Zama Organics': 'app · no cash',
   'GRN Organics': 'call / walk-in',
   'Blinkit': 'COD may carry surcharge',
@@ -249,65 +301,45 @@ const VENDOR_NOTES = Object.assign(Object.create(null), { // payment constraints
 function todayKey(d = new Date()) {
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 }
-function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+function uid() {
+  return (crypto.randomUUID) ? crypto.randomUUID() :
+    'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+      const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16);
+    });
+}
 
 /* ---------- seed data: EXAMPLE values, the family corrects them ---------- */
-function defaultState() {
-  const t = todayKey();
-  const mk = (o) => Object.assign({
-    id: uid(), category: 'food-staples', houses: 'shared-pool', vendor: '', known_good_source: '',
+function blankItem(o) {
+  return Object.assign({
+    id: uid(), item: '', category: 'food-staples', houses: 'shared-pool', vendor: '', known_good_source: '',
     qty_per_person_per_day: 0, unit: 'g', people_served: 5, frequency: 'weekly',
     price: 0, price_ceiling: 0, payment_mode: 'UPI', payment_owner: 'Ritika',
-    current_stock: 0, stock_updated_at: t, reserve_units: 0, backstock_target: 1,
+    current_stock: 0, stock_updated_at: todayKey(), reserve_units: 0, backstock_target: 1,
     storage_ceiling: 0, unit_size: 0, usual_order_qty: 0,
     vendor_lead_time_days: 2, buffer_days: 2,
-    replenish_note: '', blacklist: { flag: false, reason: '' }, status: 'vetted', seed: true
+    replenish_note: '', blacklist: { flag: false, reason: '' }, status: 'vetted', seed: false
   }, o);
-  return {
-    schemaVersion: 1,
-    items: [
-      mk({ item: 'Almonds', vendor: 'Zama Organics', known_good_source: 'Zama house brand', qty_per_person_per_day: 10, price: 450, price_ceiling: 550, current_stock: 180, reserve_units: 0, storage_ceiling: 1000, unit_size: 500, usual_order_qty: 500 }),
-      mk({ item: 'Cashews', vendor: 'Zama Organics', known_good_source: 'Zama house brand', qty_per_person_per_day: 8, price: 380, price_ceiling: 480, current_stock: 600, reserve_units: 1, storage_ceiling: 1000, unit_size: 500, usual_order_qty: 500 }),
-      mk({ item: 'Walnuts', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 6, price: 520, price_ceiling: 650, current_stock: 500, reserve_units: 1, storage_ceiling: 800, unit_size: 400, usual_order_qty: 400 }),
-      mk({ item: 'Pumpkin seeds', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 5, price: 300, price_ceiling: 380, current_stock: 60, reserve_units: 0, storage_ceiling: 500, unit_size: 250, usual_order_qty: 250 }),
-      mk({ item: 'Sunflower seeds', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 5, price: 220, price_ceiling: 300, current_stock: 400, reserve_units: 1, storage_ceiling: 600, unit_size: 250, usual_order_qty: 250 }),
-      mk({ item: 'Sesame seeds', vendor: 'GRN Organics', known_good_source: 'GRN loose (vetted)', qty_per_person_per_day: 4, price: 90, price_ceiling: 140, current_stock: 350, reserve_units: 1, storage_ceiling: 500, unit_size: 250, usual_order_qty: 250 }),
-      mk({ item: 'Raisins', vendor: 'Blinkit', known_good_source: 'Happilo', qty_per_person_per_day: 8, price: 160, price_ceiling: 220, current_stock: 100, reserve_units: 0, storage_ceiling: 750, unit_size: 250, usual_order_qty: 500 }),
-      mk({ item: 'Dates', vendor: 'Nature\'s', known_good_source: 'Nature\'s (vetted)', qty_per_person_per_day: 15, price: 350, price_ceiling: 450, current_stock: 900, reserve_units: 1, storage_ceiling: 1500, unit_size: 500, usual_order_qty: 500 }),
-      mk({ item: 'Turmeric powder', category: 'herbs-supplements', vendor: 'Blinkit', known_good_source: 'Brand X', qty_per_person_per_day: 2, price: 120, price_ceiling: 200, current_stock: 30, reserve_units: 0, storage_ceiling: 400, unit_size: 200, usual_order_qty: 200, blacklist: { flag: true, reason: 'Brand X blacklisted — opaque sourcing (example)' } }),
-      mk({ item: 'Moringa powder', category: 'herbs-supplements', vendor: 'Zama Organics', known_good_source: 'new supplier — on trial', qty_per_person_per_day: 3, price: 250, price_ceiling: 300, current_stock: 20, reserve_units: 0, storage_ceiling: 300, unit_size: 100, usual_order_qty: 200, status: 'trial' })
-    ],
-    log: [],
-    digest_decisions: {}
-  };
+}
+function seedItems() {
+  const mk = (o) => blankItem(Object.assign({ seed: true }, o));
+  return [
+    mk({ item: 'Almonds', vendor: 'Zama Organics', known_good_source: 'Zama house brand', qty_per_person_per_day: 10, price: 450, price_ceiling: 550, current_stock: 180, reserve_units: 0, storage_ceiling: 1000, unit_size: 500, usual_order_qty: 500 }),
+    mk({ item: 'Cashews', vendor: 'Zama Organics', known_good_source: 'Zama house brand', qty_per_person_per_day: 8, price: 380, price_ceiling: 480, current_stock: 600, reserve_units: 1, storage_ceiling: 1000, unit_size: 500, usual_order_qty: 500 }),
+    mk({ item: 'Walnuts', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 6, price: 520, price_ceiling: 650, current_stock: 500, reserve_units: 1, storage_ceiling: 800, unit_size: 400, usual_order_qty: 400 }),
+    mk({ item: 'Pumpkin seeds', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 5, price: 300, price_ceiling: 380, current_stock: 60, reserve_units: 0, storage_ceiling: 500, unit_size: 250, usual_order_qty: 250 }),
+    mk({ item: 'Sunflower seeds', vendor: 'Amazon', known_good_source: 'True Elements', qty_per_person_per_day: 5, price: 220, price_ceiling: 300, current_stock: 400, reserve_units: 1, storage_ceiling: 600, unit_size: 250, usual_order_qty: 250 }),
+    mk({ item: 'Sesame seeds', vendor: 'GRN Organics', known_good_source: 'GRN loose (vetted)', qty_per_person_per_day: 4, price: 90, price_ceiling: 140, current_stock: 350, reserve_units: 1, storage_ceiling: 500, unit_size: 250, usual_order_qty: 250 }),
+    mk({ item: 'Raisins', vendor: 'Blinkit', known_good_source: 'Happilo', qty_per_person_per_day: 8, price: 160, price_ceiling: 220, current_stock: 100, reserve_units: 0, storage_ceiling: 750, unit_size: 250, usual_order_qty: 500 }),
+    mk({ item: 'Dates', vendor: "Nature's", known_good_source: "Nature's (vetted)", qty_per_person_per_day: 15, price: 350, price_ceiling: 450, current_stock: 900, reserve_units: 1, storage_ceiling: 1500, unit_size: 500, usual_order_qty: 500 }),
+    mk({ item: 'Turmeric powder', category: 'herbs-supplements', vendor: 'Blinkit', known_good_source: 'Brand X', qty_per_person_per_day: 2, price: 120, price_ceiling: 200, current_stock: 30, reserve_units: 0, storage_ceiling: 400, unit_size: 200, usual_order_qty: 200, blacklist: { flag: true, reason: 'Brand X blacklisted — opaque sourcing (example)' } }),
+    mk({ item: 'Moringa powder', category: 'herbs-supplements', vendor: 'Zama Organics', known_good_source: 'new supplier — on trial', qty_per_person_per_day: 3, price: 250, price_ceiling: 300, current_stock: 20, reserve_units: 0, storage_ceiling: 300, unit_size: 100, usual_order_qty: 200, status: 'trial' })
+  ];
+}
+function emptyState() {
+  return { schemaVersion: 2, household: null, items: [], log: [], digest_decisions: {}, outbox: [] };
 }
 
-/* ---------- state ---------- */
-let memoryState = null; // fallback when localStorage is unavailable (sandboxed iframe)
-let storageOk = true;
-
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return defaultState();
-    const s = JSON.parse(raw);
-    if (!s || s.schemaVersion !== 1 || !Array.isArray(s.items)) return defaultState();
-    return s;
-  } catch (e) {
-    storageOk = false;
-    return memoryState || defaultState();
-  }
-}
-function saveState(state) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    storageOk = false;
-    memoryState = state; // keep the session alive; banner warns about persistence
-  }
-}
-
-/* ---------- computed ---------- */
+/* ---------- computed (unchanged core math from v1) ---------- */
 function dailyConsumption(item) {
   return (Number(item.qty_per_person_per_day) || 0) * (Number(item.people_served) || 0);
 }
@@ -337,13 +369,12 @@ function runOutDate(item, now = new Date()) {
 function proposedQty(item, now = new Date()) {
   const headroom = (Number(item.storage_ceiling) || 0) - effectiveStock(item, now);
   let usual = Number(item.usual_order_qty) || 0;
-  if (item.status === 'trial') usual = Math.min(usual || Infinity, Number(item.unit_size) || usual); // trial: one pack max, never full
+  if (item.status === 'trial') usual = Math.min(usual || Infinity, Number(item.unit_size) || usual); // trial: one pack max
   return Math.max(0, Math.min(usual, Math.max(0, headroom)));
 }
 function backstockOk(item) {
   return (Number(item.reserve_units) || 0) >= (Number(item.backstock_target) || 1);
 }
-/* Lane rules — STOP is inert, ASK needs review, AUTO is one-tap (v1: still human-approved) */
 function computeLane(item, now = new Date()) {
   const qty = proposedQty(item, now);
   if (item.blacklist && item.blacklist.flag) return { lane: 'STOP', reason: item.blacklist.reason || 'Blacklisted' };
@@ -358,56 +389,213 @@ function computeLane(item, now = new Date()) {
 }
 function buildDigestLines(state, now = new Date()) {
   const decisions = state.digest_decisions[todayKey(now)] || {};
-  // decided lines stay visible all day (approving bumps stock, which un-triggers the item)
   return state.items
     .filter(it => (dailyConsumption(it) > 0 && isTriggered(it, now)) || decisions[it.id])
     .map(it => ({ item: it, qty: proposedQty(it, now), laneInfo: computeLane(it, now), decision: decisions[it.id] || null }))
     .sort((a, b) => daysRemaining(a.item, now) - daysRemaining(b.item, now));
 }
 
-/* ---------- mutations ---------- */
-function approveDigestLine(state, itemId, overrides, now = new Date()) {
-  const item = state.items.find(i => i.id === itemId);
-  if (!item) return;
-  const laneInfo = computeLane(item, now);
-  if (laneInfo.lane === 'STOP') return; // STOP lines are never orderable
-  let qty = overrides && overrides.qty != null ? Number(overrides.qty) : proposedQty(item, now);
-  if (!isFinite(qty) || qty < 0) return;
-  const headroom = (Number(item.storage_ceiling) || 0) - effectiveStock(item, now);
-  qty = Math.max(0, Math.min(qty, Math.max(0, headroom))); // ceiling is a hard cap, even on adjusted lines
-  if (item.status === 'trial') qty = Math.min(qty, proposedQty(item, now)); // AC6: trial cap holds even via Adjust
-  if (qty <= 0) return;
-  if (overrides && overrides.vendor) item.vendor = overrides.vendor;
-  if (overrides && overrides.price != null && overrides.price !== '') item.price = Number(overrides.price);
-  if (overrides && overrides.qty != null && item.status !== 'trial') item.usual_order_qty = qty; // corrections stick
-  const days = daysRemaining(item, now);
-  state.log.unshift({
-    id: uid(), date: todayKey(now), item_id: item.id, item_name: item.item,
-    qty: qty, unit: item.unit, vendor: item.vendor, price: Number(item.price) || 0,
-    payment_owner: item.payment_owner, payment_mode: item.payment_mode,
-    reason: laneInfo.lane + ' · ' + (isFinite(days) ? Math.floor(days) + ' days left' : 'manual') + ', lead ' + (item.vendor_lead_time_days || 0) + 'd + buffer ' + (item.buffer_days || 0) + 'd'
+/* ---------- V2: basket ---------- */
+function buildBasket(state, now = new Date()) {
+  const decisions = state.digest_decisions[todayKey(now)] || {};
+  const groups = Object.create(null);
+  state.items.forEach(it => {
+    const d = decisions[it.id];
+    if (!d || d.action !== 'approved') return;
+    const v = it.vendor || 'No vendor set';
+    if (!groups[v]) groups[v] = [];
+    groups[v].push({ item: it, qty: Number(d.qty) || 0 });
   });
-  // ponytail: approval = stock arrives instantly; a real "received" step comes with P3 Gmail order-scouting
-  item.current_stock = effectiveStock(item, now) + qty;
-  item.stock_updated_at = todayKey(now);
-  recordDecision(state, itemId, { action: 'approved', qty: qty }, now);
+  return groups; // { vendorName: [{item, qty}] }
 }
-function skipDigestLine(state, itemId, now = new Date()) {
-  recordDecision(state, itemId, { action: 'skipped' }, now); // today only; re-triggers tomorrow if still low
+function vendorMessage(vendor, lines) {
+  const note = VENDOR_NOTES[vendor];
+  const head = vendor + ' order' + (note ? ' (' + note + ')' : '') + ':';
+  const body = lines.map(l => {
+    const it = l.item;
+    const brand = it.known_good_source ? ' (' + it.known_good_source + ')' : '';
+    const price = Number(it.price) > 0 ? ' ~₹' + it.price : '';
+    return '• ' + it.item + ' — ' + l.qty + it.unit + brand + price;
+  }).join('\n');
+  const total = lines.reduce((s, l) => s + (Number(l.item.price) || 0), 0);
+  const modes = [...new Set(lines.map(l => l.item.payment_mode).filter(Boolean))].join('/');
+  const owner = whoAmI() || lines[0].item.payment_owner || '';
+  const tail = (total > 0 ? 'Total ~₹' + total : '') + (modes ? ' · ' + modes : '') + (owner ? ' · ' + owner : '');
+  return head + '\n' + body + (tail.trim() ? '\n' + tail.replace(/^ · /, '') : '');
+}
+
+/* ---------- db layer (PostgREST via fetch; all writes idempotent) ---------- */
+let mode = 'local';        // 'shared' | 'offline' | 'local'
+let householdId = null;
+function dbConfigured() { return !!(SUPABASE_URL && SUPABASE_ANON_KEY); }
+function dbHeaders(extra) {
+  return Object.assign({
+    'apikey': SUPABASE_ANON_KEY,
+    'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+    'Content-Type': 'application/json'
+  }, extra || {});
+}
+async function dbReq(path, opts) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, Object.assign({ headers: dbHeaders(opts && opts.prefer ? { 'Prefer': opts.prefer } : {}) }, opts));
+  if (!res.ok) throw new Error('db ' + res.status + ' on ' + path);
+  const text = await res.text();
+  return text ? JSON.parse(text) : null;
+}
+const db = {
+  createHousehold: (name) => dbReq('households', { method: 'POST', body: JSON.stringify({ name }), prefer: 'return=representation' }).then(r => r[0]),
+  fetchAll: async (hh) => {
+    const [items, log, decisions] = await Promise.all([
+      dbReq('items?household_id=eq.' + hh + '&select=id,data'),
+      dbReq('order_log?household_id=eq.' + hh + '&select=entry&order=created_at.desc&limit=200'),
+      dbReq('decisions?household_id=eq.' + hh + '&day=eq.' + todayKey() + '&select=item_id,decision')
+    ]);
+    const dec = {}; decisions.forEach(d => dec[d.item_id] = d.decision);
+    return {
+      items: items.map(r => Object.assign({}, r.data, { id: r.id })),
+      log: log.map(r => r.entry),
+      digest_decisions: { [todayKey()]: dec }
+    };
+  },
+  upsertItem: (hh, item) => dbReq('items?on_conflict=id', {
+    method: 'POST', prefer: 'resolution=merge-duplicates',
+    body: JSON.stringify({ id: item.id, household_id: hh, data: item, updated_at: new Date().toISOString() })
+  }),
+  appendLog: (hh, entry) => dbReq('order_log?on_conflict=id', {
+    method: 'POST', prefer: 'resolution=merge-duplicates',
+    body: JSON.stringify({ id: entry.id, household_id: hh, entry })
+  }),
+  upsertDecision: (hh, day, itemId, decision) => dbReq('decisions?on_conflict=household_id,day,item_id', {
+    method: 'POST', prefer: 'resolution=merge-duplicates',
+    body: JSON.stringify({ household_id: hh, day, item_id: itemId, decision })
+  })
+};
+
+/* outbox: every remote write queues here first; flush is safe to repeat (idempotent upserts) */
+function queueWrite(state, kind, payload) {
+  if (mode === 'local') return; // nothing to sync to
+  state.outbox.push({ kind, payload });
+  saveCache(state);
+  flushOutbox(state);
+}
+let flushing = false;
+async function flushOutbox(state) {
+  if (flushing || !dbConfigured() || !householdId || !state.outbox.length) return;
+  flushing = true;
+  try {
+    while (state.outbox.length) {
+      const w = state.outbox[0];
+      if (w.kind === 'item') await db.upsertItem(householdId, w.payload);
+      else if (w.kind === 'log') await db.appendLog(householdId, w.payload);
+      else if (w.kind === 'decision') await db.upsertDecision(householdId, w.payload.day, w.payload.item_id, w.payload.decision);
+      state.outbox.shift();
+      saveCache(state);
+    }
+    if (mode === 'offline') { mode = 'shared'; render(state); }
+  } catch (e) {
+    if (mode === 'shared') { mode = 'offline'; render(state); }
+  } finally {
+    flushing = false;
+  }
+}
+
+/* ---------- cache (localStorage; also the whole store in local mode) ---------- */
+let memoryFallback = null;
+let storageOk = true;
+function loadCache() {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    if (raw) {
+      const s = JSON.parse(raw);
+      if (s && s.schemaVersion === 2 && Array.isArray(s.items)) return s;
+    }
+    const v1raw = localStorage.getItem(V1_KEY);
+    if (v1raw) { // migrate v1 → v2 shape (fresh uuids for db-compat, keep the log)
+      const v1 = JSON.parse(v1raw);
+      if (v1 && Array.isArray(v1.items)) {
+        const s = emptyState();
+        s.items = v1.items.map(it => blankItem(Object.assign({}, it, { id: uid() })));
+        s.log = (v1.log || []).map(e => Object.assign({}, e, { id: uid() }));
+        return s;
+      }
+    }
+    return null;
+  } catch (e) { storageOk = false; return memoryFallback; }
+}
+function saveCache(state) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(state)); }
+  catch (e) { storageOk = false; memoryFallback = state; }
+}
+
+/* ---------- who am I ---------- */
+function whoAmI() {
+  try { return localStorage.getItem(WHO_KEY) || ''; } catch (e) { return ''; }
+}
+function setWho(name) {
+  try { localStorage.setItem(WHO_KEY, name); } catch (e) { /* memory-only session */ }
+}
+
+/* ---------- mutations ---------- */
+function persistItem(state, item) {
+  saveCache(state);
+  queueWrite(state, 'item', item);
 }
 function recordDecision(state, itemId, decision, now = new Date()) {
   const k = todayKey(now);
   if (!state.digest_decisions[k]) state.digest_decisions[k] = {};
   state.digest_decisions[k][itemId] = decision;
-  saveState(state);
+  saveCache(state);
+  queueWrite(state, 'decision', { day: k, item_id: itemId, decision });
 }
-function upsertItem(state, data) {
+/* Approve = into today's basket. No stock change, no log — that happens at Mark ordered. */
+function approveDigestLine(state, itemId, overrides, now = new Date()) {
+  const item = state.items.find(i => i.id === itemId);
+  if (!item) return;
+  if (computeLane(item, now).lane === 'STOP') return;
+  let qty = overrides && overrides.qty != null ? Number(overrides.qty) : proposedQty(item, now);
+  if (!isFinite(qty) || qty < 0) return;
+  const headroom = (Number(item.storage_ceiling) || 0) - effectiveStock(item, now);
+  qty = Math.max(0, Math.min(qty, Math.max(0, headroom)));
+  if (item.status === 'trial') qty = Math.min(qty, proposedQty(item, now)); // trial cap holds even via Adjust
+  if (qty <= 0) return;
+  let touched = false;
+  if (overrides && overrides.vendor && overrides.vendor !== item.vendor) { item.vendor = overrides.vendor; touched = true; }
+  if (overrides && overrides.price != null && overrides.price !== '' && Number(overrides.price) !== item.price) { item.price = Number(overrides.price); touched = true; }
+  if (overrides && overrides.qty != null && item.status !== 'trial' && qty !== item.usual_order_qty) { item.usual_order_qty = qty; touched = true; }
+  if (touched) persistItem(state, item);
+  recordDecision(state, itemId, { action: 'approved', qty }, now);
+}
+function skipDigestLine(state, itemId, now = new Date()) {
+  recordDecision(state, itemId, { action: 'skipped' }, now);
+}
+/* Mark ordered = the real event: log entries + stock bump for every approved line of this vendor */
+function markOrdered(state, vendor, now = new Date()) {
+  const groups = buildBasket(state, now);
+  const lines = groups[vendor] || [];
+  lines.forEach(l => {
+    const it = l.item;
+    const days = daysRemaining(it, now);
+    const entry = {
+      id: uid(), date: todayKey(now), item_id: it.id, item_name: it.item,
+      qty: l.qty, unit: it.unit, vendor: it.vendor, price: Number(it.price) || 0,
+      payment_owner: whoAmI() || it.payment_owner, payment_mode: it.payment_mode,
+      by: whoAmI() || '',
+      reason: (isFinite(days) ? Math.floor(days) + ' days left' : 'manual') + ', lead ' + (it.vendor_lead_time_days || 0) + 'd + buffer ' + (it.buffer_days || 0) + 'd'
+    };
+    state.log.unshift(entry);
+    queueWrite(state, 'log', entry);
+    // ponytail: ordered = stock counted as arriving; a real "received" step comes with P3 Gmail scouting
+    it.current_stock = effectiveStock(it, now) + l.qty;
+    it.stock_updated_at = todayKey(now);
+    persistItem(state, it);
+    recordDecision(state, it.id, { action: 'ordered', qty: l.qty }, now);
+  });
+}
+function upsertItemFromForm(state, data) {
   const existing = data.id ? state.items.find(i => i.id === data.id) : null;
-  const prev = existing || defaultState().items[0]; // defaults for unset numeric fields
   const stockChanged = !existing || Number(data.current_stock) !== Number(existing.current_stock);
-  const next = {
+  const next = blankItem({
     id: existing ? existing.id : uid(),
-    item: data.item.trim(), category: data.category, houses: 'shared-pool',
+    item: data.item.trim(), category: data.category,
     vendor: data.vendor.trim(), known_good_source: data.known_good_source.trim(),
     qty_per_person_per_day: Number(data.qty_per_person_per_day) || 0, unit: data.unit,
     people_served: Number(data.people_served) || 5, frequency: data.frequency.trim(),
@@ -423,10 +611,32 @@ function upsertItem(state, data) {
     replenish_note: data.replenish_note.trim(),
     blacklist: { flag: !!data.blacklist_flag, reason: data.blacklist_reason.trim() },
     status: data.blacklist_flag ? 'blacklisted' : data.status,
-    seed: false // any human edit clears the "example" tag
-  };
+    seed: false
+  });
   if (existing) Object.assign(existing, next); else state.items.push(next);
-  saveState(state);
+  persistItem(state, existing || next);
+  return next;
+}
+function quickAdd(state, data) {
+  const pack = Number(data.pack) || 0;
+  const item = blankItem({
+    item: data.item.trim(), vendor: data.vendor.trim(), unit: data.unit,
+    qty_per_person_per_day: (Number(data.daily) || 0) / 5, people_served: 5,
+    unit_size: pack, usual_order_qty: pack, storage_ceiling: pack * 2,
+    current_stock: pack, payment_owner: whoAmI() || 'Ritika'
+  });
+  state.items.push(item);
+  persistItem(state, item);
+  return item;
+}
+function setStockFraction(state, itemId, fraction, now = new Date()) {
+  const it = state.items.find(i => i.id === itemId);
+  if (!it) return;
+  const fullLevel = Number(it.storage_ceiling) || Number(it.unit_size) || Number(it.current_stock) || 0;
+  it.current_stock = Math.round(fullLevel * fraction);
+  it.stock_updated_at = todayKey(now);
+  it.seed = false;
+  persistItem(state, it);
 }
 
 /* ---------- render ---------- */
@@ -434,26 +644,70 @@ const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&a
 const fmtDate = d => d ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : '—';
 const fmtDays = n => !isFinite(n) ? '—' : (n < 1 ? '<1' : String(Math.floor(n)));
 let currentTab = 'digest';
+let bootScreen = null; // 'start' when no household yet in shared-capable mode
 
 function render(state) {
   const view = document.getElementById('view');
+  document.getElementById('whoBox').innerHTML = whoAmI()
+    ? 'You: <b>' + esc(whoAmI()) + '</b> <button data-action="who-change">change</button>' : '';
+  if (bootScreen === 'start') {
+    document.getElementById('pageTitle').textContent = 'Welcome';
+    document.getElementById('tabsNav').style.display = 'none';
+    view.innerHTML = renderStartScreen(state);
+    document.getElementById('footerBox').innerHTML = '';
+    return;
+  }
+  document.getElementById('tabsNav').style.display = '';
   const titles = { digest: 'Morning digest', items: 'Items — shared pool', log: 'Order log' };
   document.getElementById('pageTitle').textContent = titles[currentTab];
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
   const banners = renderBanners(state);
-  if (currentTab === 'digest') view.innerHTML = banners + renderDigestView(state);
+  if (currentTab === 'digest') view.innerHTML = banners + renderBasketSection(state) + renderDigestView(state);
   else if (currentTab === 'items') view.innerHTML = banners + renderItemsView(state);
   else view.innerHTML = banners + renderLogView(state);
   const pending = buildDigestLines(state).filter(l => !l.decision && l.laneInfo.lane !== 'STOP').length;
   const badge = document.getElementById('digestBadge');
   badge.hidden = pending === 0;
   badge.textContent = pending;
+  renderFooter(state);
+}
+function renderStartScreen(state) {
+  const hasOld = state.items.length > 0;
+  return '<div class="center"><h2>Set up your household</h2>' +
+    '<p>One shared list for both houses — everyone with the link sees the same items, stock, and orders.</p>' +
+    (hasOld ? '<p class="why">Found ' + state.items.length + ' items already on this device — they\'ll come along.</p>' : '') +
+    '<div class="actions" style="justify-content:center;"><button class="btn primary" data-action="create-household">Start our household</button></div>' +
+    '<p class="why" style="margin-top:14px;">You\'ll get a link to share with the family.</p></div>';
 }
 function renderBanners(state) {
   let html = '';
-  if (!storageOk) html += '<div class="note">Heads up: this device isn’t saving between visits. Your changes work now but may reset when you close the page — use “Save file” to keep a copy.</div>';
+  if (!storageOk) html += '<div class="note alert">This device isn’t saving between visits — changes work now but may reset. Use Backup to keep a copy.</div>';
+  if (mode === 'local' && !dbConfigured()) html += '<div class="note quiet">Running on this device only for now — sharing across the family switches on soon.</div>';
+  if (mode === 'local' && dbConfigured()) html += '<div class="note">This copy isn’t connected to the family list. Open the household link the family shared to join it.</div>';
+  if (mode === 'offline') html += '<div class="note">Offline — your changes are saved here and will sync when you’re back.</div>';
   if (state.items.some(i => i.seed)) html += '<div class="note quiet">The items below are <span class="chip ex">example</span> ones with made-up numbers, just to show how it works. Tap an item, then <b>Edit</b>, to put in your real amounts — the <span class="chip ex">example</span> tag disappears once you do.</div>';
   return html;
+}
+function renderBasketSection(state) {
+  const groups = buildBasket(state);
+  const vendors = Object.keys(groups);
+  if (!vendors.length) return '';
+  const canShare = !!navigator.share;
+  const cards = vendors.map(v => {
+    const msg = vendorMessage(v, groups[v]);
+    const note = VENDOR_NOTES[v];
+    return '<div class="vcard"><div class="row"><h3>' + esc(v) + '</h3>' + (note ? '<span class="chip">' + esc(note) + '</span>' : '') + '</div>' +
+      '<pre>' + esc(msg) + '</pre>' +
+      '<div class="actions">' +
+      (canShare ? '<button class="btn" data-action="share-order" data-vendor="' + esc(v) + '">Share</button>' : '') +
+      '<button class="btn ghost" data-action="copy-order" data-vendor="' + esc(v) + '">Copy</button>' +
+      '<a class="btn small" style="align-self:center" data-wa="' + esc(v) + '" href="https://wa.me/?text=' + encodeURIComponent(msg) + '" target="_blank" rel="noopener">WhatsApp</a>' +
+      '<button class="btn primary" data-action="mark-ordered" data-vendor="' + esc(v) + '">Mark ordered</button>' +
+      '</div></div>';
+  }).join('');
+  return '<div class="basket"><h2>🧺 Today’s order basket</h2>' +
+    '<p class="b-sub">Send each list to its vendor (or whoever’s ordering), then tap “Mark ordered” so stock and the log update.</p>' +
+    cards + '</div>';
 }
 function renderDigestView(state) {
   const lines = buildDigestLines(state);
@@ -466,8 +720,10 @@ function renderDigestView(state) {
       '<span class="sub">' + esc(it.vendor || 'no vendor set') + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + '</span></div>' +
       '<span class="flag ' + lane.toLowerCase() + '">' + lane + '</span></div>';
     if (l.decision) {
-      const what = l.decision.action === 'approved' ? 'Approved — ' + l.decision.qty + esc(it.unit) + ' ordered and logged' : 'Skipped for today';
-      return '<div class="card resolved">' + head + '<p class="why">' + what + '. Back tomorrow if still low.</p></div>';
+      const what = l.decision.action === 'ordered' ? 'Ordered ✓ — ' + l.decision.qty + esc(it.unit) + ' logged'
+        : l.decision.action === 'approved' ? 'In the basket above — waiting to be sent &amp; marked ordered'
+        : 'Skipped for today. Back tomorrow if still low.';
+      return '<div class="card resolved">' + head + '<p class="why">' + what + '</p></div>';
     }
     if (lane === 'STOP') {
       return '<div class="card">' + head +
@@ -477,10 +733,10 @@ function renderDigestView(state) {
     const why = fmtDays(days) + ' day' + (days >= 2 ? 's' : '') + ' left · trigger at ' + trig + 'd (lead ' + (it.vendor_lead_time_days || 0) + 'd + buffer ' + (it.buffer_days || 0) + 'd)';
     return '<div class="card" data-line="' + it.id + '">' + head +
       '<div class="kpis"><span class="kpi">Proposed <b>' + l.qty + esc(it.unit) + '</b></span>' +
-      '<span class="kpi">₹<b>' + esc(it.price) + '</b> · ' + esc(it.payment_mode) + ' · ' + esc(it.payment_owner) + vnote + '</span></div>' +
+      '<span class="kpi">₹<b>' + esc(it.price) + '</b> · ' + esc(it.payment_mode) + vnote + '</span></div>' +
       '<p class="why">' + esc(why) + (lane === 'ASK' ? ' · ' + esc(l.laneInfo.reason) : '') + '</p>' +
       '<div class="actions">' +
-        '<button class="btn" data-action="approve" data-id="' + it.id + '">Approve ' + l.qty + esc(it.unit) + '</button>' +
+        '<button class="btn" data-action="approve" data-id="' + it.id + '">Add to basket · ' + l.qty + esc(it.unit) + '</button>' +
         '<button class="btn ghost" data-action="toggle-adjust" data-id="' + it.id + '">Adjust</button>' +
         '<button class="btn ghost" data-action="skip" data-id="' + it.id + '">Skip today</button>' +
       '</div>' +
@@ -488,7 +744,7 @@ function renderDigestView(state) {
         '<label for="adj-qty-' + it.id + '">Quantity (' + esc(it.unit) + ') — ceiling caps it</label><input id="adj-qty-' + it.id + '" type="number" min="0" step="any" value="' + l.qty + '">' +
         '<label for="adj-vendor-' + it.id + '">Vendor</label><input id="adj-vendor-' + it.id + '" list="vendorList" value="' + esc(it.vendor) + '">' +
         '<label for="adj-price-' + it.id + '">Price (₹)</label><input id="adj-price-' + it.id + '" type="number" min="0" step="any" value="' + esc(it.price) + '">' +
-        '<div class="actions"><button class="btn" data-action="approve-adjusted" data-id="' + it.id + '">Approve adjusted</button></div>' +
+        '<div class="actions"><button class="btn" data-action="approve-adjusted" data-id="' + it.id + '">Add adjusted to basket</button></div>' +
       '</div></div>';
   }).join('');
 }
@@ -505,22 +761,134 @@ function renderItemsView(state) {
       '<span class="kpi">Stock ≈ <b>' + Math.round(effectiveStock(it)) + esc(it.unit) + '</b></span>' +
       '<span class="kpi"><b>' + fmtDays(days) + '</b> days left</span>' +
       '<span class="kpi">runs out ~<b>' + fmtDate(runOutDate(it)) + '</b></span>' +
-      '<span class="kpi">uses <b>' + dailyConsumption(it) + esc(it.unit) + '</b>/day</span>' +
       (isTriggered(it) && lane !== 'STOP' ? '<span class="kpi"><b>in today’s digest</b></span>' : '') +
       '</div>' +
       (it.replenish_note ? '<p class="why">♻︎ ' + esc(it.replenish_note) + '</p>' : '') +
-      '<div class="actions"><button class="btn ghost small" data-action="edit-item" data-id="' + it.id + '">Edit</button>' +
-      '<button class="btn ghost small" data-action="update-stock" data-id="' + it.id + '">Update stock</button></div>' +
+      '<div class="actions"><button class="btn ghost small" data-action="edit-item" data-id="' + it.id + '">Edit</button></div>' +
       '</div>';
   }).join('');
-  return '<div class="actions" style="margin:0 0 14px;"><button class="btn" data-action="add-item">+ Add item</button></div>' + (rows || '<div class="empty">No items yet — add the first one.</div>');
+  return '<div class="actions" style="margin:0 0 14px;">' +
+    '<button class="btn" data-action="quick-add">+ Add item</button>' +
+    '<button class="btn ghost" data-action="stock-check">Stock check</button>' +
+    '</div>' + (rows || '<div class="empty">No items yet — add the first one.</div>');
 }
 function renderLogView(state) {
-  if (!state.log.length) return '<div class="empty">No orders yet. Approvals from the digest land here — what, from where, why, at what price.</div>';
+  if (!state.log.length) return '<div class="empty">No orders yet. When a basket is marked ordered, it lands here — what, from where, why, at what price, and who ordered.</div>';
   const rows = state.log.map(e =>
-    '<tr><td>' + esc(e.date) + '</td><td>' + esc(e.item_name) + '</td><td>' + e.qty + esc(e.unit) + '</td><td>' + esc(e.vendor) + '</td><td>₹' + esc(e.price) + '</td><td>' + esc(e.payment_owner) + ' · ' + esc(e.payment_mode) + '</td><td>' + esc(e.reason) + '</td></tr>'
+    '<tr><td>' + esc(e.date) + '</td><td>' + esc(e.item_name) + '</td><td>' + e.qty + esc(e.unit) + '</td><td>' + esc(e.vendor) + '</td><td>₹' + esc(e.price) + '</td><td>' + esc(e.payment_owner) + ' · ' + esc(e.payment_mode) + '</td><td>' + esc(e.by || '') + '</td><td>' + esc(e.reason) + '</td></tr>'
   ).join('');
-  return '<div class="tablewrap"><table><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>From</th><th>Price</th><th>Paid by</th><th>Why</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+  return '<div class="tablewrap"><table><thead><tr><th>Date</th><th>Item</th><th>Qty</th><th>From</th><th>Price</th><th>Paid by</th><th>By</th><th>Why</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+function renderFooter(state) {
+  const share = (mode !== 'local' && householdId)
+    ? 'Family link (share this exact link): ' + location.origin + location.pathname + '#h=' + householdId + '<br>'
+    : '';
+  document.getElementById('footerBox').innerHTML = share +
+    'Home OS v2 · shared-pool tracker · Backup saves a copy of everything.';
+}
+
+/* ---------- stock check flow ---------- */
+let stockQueue = [];
+function startStockCheck(state) {
+  stockQueue = state.items.filter(i => !i.blacklist.flag).map(i => i.id);
+  if (!stockQueue.length) return;
+  document.getElementById('stockDialog').showModal();
+  renderStockStep(state);
+}
+function renderStockStep(state) {
+  const body = document.getElementById('stockBody');
+  if (!stockQueue.length) {
+    body.innerHTML = '<h2>Done ✓</h2><p class="d-sub">Stock levels re-anchored to today.</p>' +
+      '<div class="d-actions"><span></span><button class="btn" data-action="stock-close">Close</button></div>';
+    return;
+  }
+  const it = state.items.find(i => i.id === stockQueue[0]);
+  const full = Number(it.storage_ceiling) || Number(it.unit_size) || 0;
+  body.innerHTML = '<h2>' + esc(it.item) + '</h2>' +
+    '<p class="d-sub">How full is it, roughly? (full ≈ ' + full + esc(it.unit) + ' · now ≈ ' + Math.round(effectiveStock(it)) + esc(it.unit) + ')</p>' +
+    '<div class="fractions">' +
+    [['Full', 1], ['¾', .75], ['½', .5], ['¼', .25], ['Out', 0]].map(f =>
+      '<button class="btn ghost" data-action="stock-set" data-id="' + it.id + '" data-f="' + f[1] + '">' + f[0] + '</button>').join('') +
+    '</div>' +
+    '<div class="d-actions" style="margin-top:14px;"><button class="btn ghost small" data-action="stock-skip">Skip this one</button>' +
+    '<button class="btn ghost small" data-action="stock-close">Stop here</button></div>';
+}
+
+/* ---------- export / import ---------- */
+function exportJSON(state) {
+  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'home-os-backup-' + todayKey() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ---------- copy helper ---------- */
+function copyText(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text);
+  const ta = document.createElement('textarea');
+  ta.value = text; document.body.appendChild(ta); ta.select();
+  document.execCommand('copy'); ta.remove();
+  return Promise.resolve();
+}
+
+/* ---------- boot ---------- */
+let state = emptyState();
+function parseHousehold() {
+  const m = location.hash.match(/#h=([0-9a-f-]{36})/i);
+  return m ? m[1] : null;
+}
+async function boot() {
+  const cached = loadCache() || emptyState();
+  state = cached;
+  householdId = parseHousehold() || state.household;
+  if (!dbConfigured()) {
+    mode = 'local';
+    if (!state.items.length) state.items = seedItems();
+    saveCache(state);
+  } else if (householdId) {
+    try {
+      const remote = await db.fetchAll(householdId);
+      state.household = householdId;
+      state.items = remote.items;
+      state.log = remote.log;
+      state.digest_decisions = remote.digest_decisions;
+      mode = 'shared';
+      saveCache(state);
+      if (location.hash.indexOf('#h=') < 0) location.hash = '#h=' + householdId;
+      flushOutbox(state);
+    } catch (e) {
+      mode = 'offline'; // work from cache; retry on focus
+    }
+  } else {
+    mode = 'local';
+    bootScreen = 'start';
+  }
+  if (!whoAmI() && !bootScreen) openWhoDialog();
+  render(state);
+}
+async function createHousehold(state) {
+  try {
+    const hh = await db.createHousehold('Home');
+    householdId = hh.id;
+    state.household = hh.id;
+    if (!state.items.length) state.items = seedItems();
+    mode = 'shared';
+    bootScreen = null;
+    location.hash = '#h=' + hh.id;
+    saveCache(state);
+    state.items.forEach(it => queueWrite(state, 'item', it));
+    if (!whoAmI()) openWhoDialog();
+    render(state);
+  } catch (e) {
+    alert('Couldn’t reach the shared list — check the internet and try again. Nothing was lost.');
+  }
+}
+function openWhoDialog() {
+  const grid = document.getElementById('nameGrid');
+  grid.innerHTML = FAMILY.map(n => '<button class="btn ghost" data-action="who-pick" data-name="' + esc(n) + '">' + esc(n) + '</button>').join('');
+  document.getElementById('whoDialog').showModal();
 }
 
 /* ---------- item dialog ---------- */
@@ -546,32 +914,12 @@ function openItemDialog(state, itemId) {
     form.elements.blacklist_flag.checked = it.blacklist.flag;
   } else {
     set('id', ''); set('people_served', 5); set('vendor_lead_time_days', 2); set('buffer_days', 2);
-    set('payment_owner', 'Ritika'); set('payment_mode', 'UPI');
+    set('payment_owner', whoAmI() || 'Ritika'); set('payment_mode', 'UPI');
   }
   dlg.showModal();
 }
 
-/* ---------- export / import ---------- */
-function exportJSON(state) {
-  const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'home-os-' + todayKey() + '.json';
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-function importJSON(text) {
-  let s;
-  try { s = JSON.parse(text); } catch (e) { alert('That file isn’t readable as Home OS data — nothing was changed.'); return null; }
-  if (!s || s.schemaVersion !== 1 || !Array.isArray(s.items)) { alert('That file isn’t Home OS v1 data — nothing was changed.'); return null; }
-  saveState(s);
-  return s;
-}
-
 /* ---------- events (one delegated listener) ---------- */
-let state = loadState();
-saveState(state); // persist seed on first visit
-
 document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('[data-action]');
   if (!btn) return;
@@ -588,36 +936,45 @@ document.addEventListener('click', (ev) => {
     }
     case 'toggle-adjust': document.getElementById('adjust-' + id).classList.toggle('open'); break;
     case 'skip': skipDigestLine(state, id); render(state); break;
-    case 'add-item': openItemDialog(state, null); break;
-    case 'edit-item': openItemDialog(state, id); break;
-    case 'update-stock': {
-      const it = state.items.find(i => i.id === id);
-      const v = prompt('Stock now for ' + it.item + ' (' + it.unit + ', open + reserve):', Math.round(effectiveStock(it)));
-      if (v !== null && v.trim() !== '' && isFinite(Number(v))) {
-        it.current_stock = Math.max(0, Number(v));
-        it.stock_updated_at = todayKey();
-        it.seed = false;
-        saveState(state); render(state);
-      }
+    case 'share-order': {
+      const v = btn.dataset.vendor;
+      navigator.share({ text: vendorMessage(v, buildBasket(state)[v] || []) }).catch(() => {});
       break;
     }
+    case 'copy-order': {
+      const v = btn.dataset.vendor;
+      copyText(vendorMessage(v, buildBasket(state)[v] || [])).then(() => {
+        btn.textContent = 'Copied ✓';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 1500);
+      });
+      break;
+    }
+    case 'mark-ordered': markOrdered(state, btn.dataset.vendor); render(state); break;
+    case 'quick-add': document.getElementById('quickForm').reset(); document.getElementById('quickDialog').showModal(); break;
+    case 'edit-item': openItemDialog(state, id); break;
+    case 'stock-check': startStockCheck(state); break;
+    case 'stock-set': {
+      setStockFraction(state, id, Number(btn.dataset.f));
+      stockQueue.shift(); renderStockStep(state); break;
+    }
+    case 'stock-skip': stockQueue.shift(); renderStockStep(state); break;
+    case 'stock-close': document.getElementById('stockDialog').close(); render(state); break;
+    case 'create-household': createHousehold(state); break;
+    case 'who-pick': setWho(btn.dataset.name); document.getElementById('whoDialog').close(); render(state); break;
+    case 'who-save': {
+      const v = document.getElementById('whoFree').value.trim();
+      if (v) { setWho(v); document.getElementById('whoDialog').close(); render(state); }
+      break;
+    }
+    case 'who-change': openWhoDialog(); break;
     case 'export': exportJSON(state); break;
-    case 'import': document.getElementById('importFile').click(); break;
     case 'dialog-cancel': document.getElementById('itemDialog').close('cancel'); break;
+    case 'dialog-cancel-quick': document.getElementById('quickDialog').close('cancel'); break;
   }
 });
 document.querySelectorAll('nav.tabs button').forEach(b =>
   b.addEventListener('click', () => { currentTab = b.dataset.tab; render(state); })
 );
-document.getElementById('importFile').addEventListener('change', (ev) => {
-  const f = ev.target.files[0];
-  if (!f) return;
-  f.text().then(text => {
-    const s = importJSON(text);
-    if (s) { state = s; render(state); }
-    ev.target.value = '';
-  });
-});
 document.getElementById('itemForm').addEventListener('submit', (ev) => {
   const form = ev.target;
   if (!form.elements.item.value.trim()) { ev.preventDefault(); form.elements.item.focus(); return; }
@@ -627,44 +984,87 @@ document.getElementById('itemForm').addEventListener('submit', (ev) => {
    'usual_order_qty','vendor_lead_time_days','buffer_days','price','price_ceiling',
    'payment_mode','payment_owner','replenish_note','blacklist_reason'].forEach(n => data[n] = form.elements[n].value);
   data.blacklist_flag = form.elements.blacklist_flag.checked;
-  upsertItem(state, data);
+  upsertItemFromForm(state, data);
   render(state);
 });
+document.getElementById('quickForm').addEventListener('submit', (ev) => {
+  const form = ev.target;
+  if (!form.elements.item.value.trim()) { ev.preventDefault(); form.elements.item.focus(); return; }
+  quickAdd(state, { item: form.elements.item.value, vendor: form.elements.vendor.value, pack: form.elements.pack.value, unit: form.elements.unit.value, daily: form.elements.daily.value });
+  render(state);
+});
+/* re-sync when the family comes back to the tab, and when the link (household) changes */
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && mode !== 'local') {
+    flushOutbox(state);
+    if (dbConfigured() && householdId) {
+      db.fetchAll(householdId).then(remote => {
+        // remote wins for anything we don't have queued locally (outbox items re-apply after)
+        state.items = remote.items; state.log = remote.log; state.digest_decisions = remote.digest_decisions;
+        mode = 'shared'; saveCache(state); render(state);
+        flushOutbox(state);
+      }).catch(() => { mode = 'offline'; render(state); });
+    }
+  }
+});
+window.addEventListener('hashchange', () => { bootScreen = null; boot(); });
 
-render(state);
+boot();
 
 /* ---------- self-check (open with #selftest) ---------- */
 function runSelfTest() {
   const t = todayKey();
-  const item = { qty_per_person_per_day: 10, people_served: 5, unit: 'g', current_stock: 350, stock_updated_at: t,
-    storage_ceiling: 1000, usual_order_qty: 500, unit_size: 500, vendor_lead_time_days: 2, buffer_days: 2,
-    price: 450, price_ceiling: 550, status: 'vetted', blacklist: { flag: false, reason: '' }, reserve_units: 1, backstock_target: 1 };
+  const base = () => blankItem({ item: 'T', vendor: 'Zama Organics', known_good_source: 'B', qty_per_person_per_day: 10, people_served: 5, current_stock: 350,
+    storage_ceiling: 1000, usual_order_qty: 500, unit_size: 500, price: 450, price_ceiling: 550, reserve_units: 1, payment_mode: 'UPI', payment_owner: 'R' });
   const results = [];
   const ok = (name, cond) => results.push((cond ? 'PASS' : 'FAIL') + ' ' + name);
+  const item = base();
   ok('daily consumption', dailyConsumption(item) === 50);
   ok('days remaining', daysRemaining(item) === 7);
   ok('not triggered at 7d vs 4d trigger', !isTriggered(item));
-  const old = Object.assign({}, item, { stock_updated_at: '2000-01-01' });
+  const old = Object.assign(base(), { stock_updated_at: '2000-01-01' });
   ok('stock decays over time', effectiveStock(old) === 0 && isTriggered(old));
-  ok('AC4 ceiling clamp', proposedQty(Object.assign({}, item, { current_stock: 700 })) === 300);
-  ok('AC3 trigger boundary', isTriggered(Object.assign({}, item, { current_stock: 200 })));  // 4d = trigger
-  ok('AC5 blacklist is STOP', computeLane(Object.assign({}, item, { blacklist: { flag: true, reason: 'x' } })).lane === 'STOP');
-  ok('AC6 trial caps at one pack', proposedQty(Object.assign({}, item, { status: 'trial', current_stock: 0, unit_size: 100, usual_order_qty: 500 })) === 100);
-  ok('trial lane is ASK', computeLane(Object.assign({}, item, { status: 'trial' })).lane === 'ASK');
-  ok('price over ceiling is ASK', computeLane(Object.assign({}, item, { price: 600 })).lane === 'ASK');
-  ok('vetted usual is AUTO', computeLane(item).lane === 'AUTO');
-  ok('over-ceiling stock is STOP', computeLane(Object.assign({}, item, { current_stock: 1000 })).lane === 'STOP');
-  ok('backstock ok', backstockOk(item) === true && backstockOk(Object.assign({}, item, { reserve_units: 0 })) === false);
-  const st = { items: [Object.assign({}, item, { id: 'x', item: 'T', vendor: 'V', payment_owner: 'R', payment_mode: 'UPI', current_stock: 100 })], log: [], digest_decisions: {} };
-  approveDigestLine(st, 'x');
-  ok('AC8 approve writes full log entry', st.log.length === 1 && st.log[0].qty === 500 && st.log[0].payment_owner === 'R' && st.log[0].payment_mode === 'UPI' && st.log[0].price === 450);
-  ok('approve bumps stock', st.items[0].current_stock === 600);
-  ok('decision recorded for today', !!st.digest_decisions[t] && st.digest_decisions[t]['x'].action === 'approved');
+  ok('ceiling clamp', proposedQty(Object.assign(base(), { current_stock: 700 })) === 300);
+  ok('trigger boundary', isTriggered(Object.assign(base(), { current_stock: 200 })));
+  ok('blacklist is STOP', computeLane(Object.assign(base(), { blacklist: { flag: true, reason: 'x' } })).lane === 'STOP');
+  ok('trial caps at one pack', proposedQty(Object.assign(base(), { status: 'trial', current_stock: 0, unit_size: 100, usual_order_qty: 500 })) === 100);
+  ok('trial lane is ASK', computeLane(Object.assign(base(), { status: 'trial' })).lane === 'ASK');
+  ok('price over ceiling is ASK', computeLane(Object.assign(base(), { price: 600 })).lane === 'ASK');
+  ok('vetted usual is AUTO', computeLane(base()).lane === 'AUTO');
+  ok('over-ceiling stock is STOP', computeLane(Object.assign(base(), { current_stock: 1000 })).lane === 'STOP');
+  ok('backstock ok/nok', backstockOk(item) === true && backstockOk(Object.assign(base(), { reserve_units: 0 })) === false);
+  /* v2: approve → basket only; markOrdered → log + stock */
+  const it2 = Object.assign(base(), { id: uid(), current_stock: 100 });
+  const st = { schemaVersion: 2, household: null, items: [it2], log: [], digest_decisions: {}, outbox: [] };
+  approveDigestLine(st, it2.id);
+  ok('approve does NOT touch stock', st.items[0].current_stock === 100);
+  ok('approve does NOT write log', st.log.length === 0);
+  ok('approve recorded in basket', buildBasket(st)['Zama Organics'] && buildBasket(st)['Zama Organics'][0].qty === 500);
+  const msg = vendorMessage('Zama Organics', buildBasket(st)['Zama Organics']);
+  ok('message has vendor + payment note', msg.indexOf('Zama Organics order (app · no cash):') === 0);
+  ok('message line format', msg.indexOf('• T — 500g (B) ~₹450') > 0);
+  ok('message total', msg.indexOf('Total ~₹450') > 0);
+  markOrdered(st, 'Zama Organics');
+  ok('markOrdered writes full log entry', st.log.length === 1 && st.log[0].qty === 500 && st.log[0].payment_mode === 'UPI' && st.log[0].price === 450);
+  ok('markOrdered bumps stock + re-anchors', st.items[0].current_stock === 600 && st.items[0].stock_updated_at === t);
+  ok('decision now ordered', st.digest_decisions[t][it2.id].action === 'ordered');
+  /* fraction capture */
+  const it3 = Object.assign(base(), { id: uid(), storage_ceiling: 800 });
+  const st2 = { schemaVersion: 2, household: null, items: [it3], log: [], digest_decisions: {}, outbox: [] };
+  setStockFraction(st2, it3.id, 0.5);
+  ok('stock check ½ = half of ceiling', st2.items[0].current_stock === 400 && st2.items[0].stock_updated_at === t);
+  setStockFraction(st2, it3.id, 0);
+  ok('stock check Out = 0', st2.items[0].current_stock === 0);
+  /* quick add */
+  const qa = quickAdd(st2, { item: 'Pista', vendor: 'Amazon', pack: '250', unit: 'g', daily: '25' });
+  ok('quick add derives fields', qa.usual_order_qty === 250 && qa.storage_ceiling === 500 && dailyConsumption(qa) === 25);
+  /* outbox stays empty in local mode */
+  ok('local mode queues nothing', st2.outbox.length === 0);
   const failed = results.filter(r => r.startsWith('FAIL'));
-  console.log('Home OS self-test:\n' + results.join('\n'));
+  console.log('Home OS v2 self-test:\n' + results.join('\n'));
   alert('Self-test: ' + (results.length - failed.length) + '/' + results.length + ' passed' + (failed.length ? '\n' + failed.join('\n') : ''));
 }
-if (location.hash === '#selftest') runSelfTest();
+if (location.hash.indexOf('selftest') >= 0) runSelfTest();
 </script>
 </body>
 </html>

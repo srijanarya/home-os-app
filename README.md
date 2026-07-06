@@ -1,14 +1,17 @@
-# Home OS — v1
+# Home OS — v2
 
-A single-file household shared-pool tracker: a morning digest of what to reorder
-(approve / adjust / skip), an editable item list, and an order log. Vanilla JS,
-no build step, no backend — every entry stays in your own browser's local storage.
-"Send to Srijan" exports a copy for feedback rounds.
+A single-file household tracker that ends in real orders: the morning digest
+builds a per-vendor **order basket** — one tap shares a formatted order message
+(WhatsApp/copy) respecting each vendor's payment quirks, and "Mark ordered"
+updates stock and the log. Rapid "stock check" mode (tap how full each jar is),
+4-field quick add, and a who-are-you picker for attribution.
 
 **Live:** https://srijanarya.github.io/home-os-app/
 
-The example items ship with made-up numbers — edit them to your real amounts and
-the "example" tag clears.
+Sharing across devices runs on Supabase (plain PostgREST fetch, no client lib);
+until credentials are wired the app runs in local-only mode per device. The
+household link (`#h=<uuid>`) is the access secret — same trust model as a
+private doc link.
 
 Planning docs (PRD + design brief) live in the private `home-os` repo; this repo
-is just the deployable app. No real household data is stored here.
+is just the deployable app. No real household data is stored in this repo.
