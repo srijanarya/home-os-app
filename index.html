@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home OS — v2.4</title>
+<title>Home OS — v2.5</title>
 <style>
   :root{
     --ink:#1c1a17; --ink-soft:#4a453e;
@@ -67,6 +67,9 @@
   .chip{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:2px;letter-spacing:.04em;border:1px solid var(--line);color:var(--ink-soft);background:var(--paper);white-space:nowrap;}
   .chip.ok{border-color:var(--sage);color:var(--sage);background:var(--sage-soft);}
   .chip.warn{border-color:var(--clay);color:var(--clay);background:var(--clay-soft);}
+  .chip.low{border-color:var(--amber);color:var(--amber);background:var(--amber-soft);}
+  .why.ok{color:var(--sage);font-style:normal;}
+  .why.warn{color:var(--clay);font-style:normal;}
   .chip.ex{border-color:var(--amber);color:var(--amber);background:var(--amber-soft);}
 
   button.btn{
@@ -174,7 +177,7 @@
 
 <header>
   <div>
-    <span class="eyebrow">Home OS · v2.4</span>
+    <span class="eyebrow">Home OS · v2.5</span>
     <h1 id="pageTitle">Morning digest</h1>
   </div>
   <div class="hdr-actions">
@@ -402,7 +405,7 @@
 
 <script>
 'use strict';
-/* ===== Home OS v2.4 — shared household tracker =====
+/* ===== Home OS v2.5 — shared household tracker =====
    v2.1: admin-managed category tree (day-to-day categories untracked),
    vetting = vendor-item pair (repository entries are vetted by definition),
    trials as separate flow, CSV bulk import for the structured data doc. */
@@ -1339,14 +1342,25 @@ function toggleMenuRecipe(state, day, recipeId) {
   if (i >= 0) cur.splice(i, 1); else cur.push(recipeId);
   setMenuDay(state, day, cur);
 }
-// does the pantry hold this ingredient? (loose name/hindi match against items)
-function ingredientInStock(state, ingredientName) {
+// find the pantry item that best matches an ingredient (loose name/hindi match)
+function matchItemForIngredient(state, ingredientName) {
   const n = String(ingredientName || '').toLowerCase().trim();
-  if (!n) return false;
-  return state.items.some(it => {
+  if (!n) return null;
+  return state.items.find(it => {
     const nm = String(it.item || '').toLowerCase(), hi = String(it.hindi || '').toLowerCase();
     return (nm && (n.includes(nm) || nm.includes(n))) || (hi && (n.includes(hi) || hi.includes(n)));
-  });
+  }) || null;
+}
+function ingredientInStock(state, ingredientName) { return !!matchItemForIngredient(state, ingredientName); }
+// traffic-light status for a recipe ingredient — a verification signal, never a block:
+//   'missing' (grey)  no matching item in the list
+//   'low'     (amber) matching tracked item that's running low (in today's digest)
+//   'have'    (green) matching item that's day-to-day, or tracked and not low
+function ingredientStatus(state, ingredientName) {
+  const it = matchItemForIngredient(state, ingredientName);
+  if (!it) return 'missing';
+  if (isTrackedItem(state, it) && !(it.blacklist && it.blacklist.flag) && dailyConsumption(it) > 0 && isTriggered(it)) return 'low';
+  return 'have';
 }
 // recipes that use a given pantry item (the "leeks arrived → recipes" lookup)
 function recipesForItem(state, item) {
@@ -1372,9 +1386,23 @@ function dayMenuMessage(state, day) {
   }).join('\n\n');
 }
 
+// counts of each ingredient status across a recipe (for the readiness line / day summary)
+function recipeStock(state, r) {
+  const c = { have: 0, low: 0, missing: 0 };
+  (r.ingredients || []).forEach(i => { c[ingredientStatus(state, i)]++; });
+  return c;
+}
+function readinessLine(c, total) {
+  if (!total) return '';
+  if (c.low) return '<p class="why warn">⚠ ' + c.low + ' ingredient' + (c.low > 1 ? 's' : '') + ' running low — worth a reorder</p>';
+  if (c.missing) return '<p class="why">• ' + c.missing + ' not in your list yet</p>';
+  return '<p class="why ok">✓ all ingredients in stock</p>';
+}
 function renderRecipeRow(state, r) {
+  const CHIP = { have: ' ok', low: ' low', missing: '' };
   const chips = (r.ingredients || []).slice(0, 5).map(i =>
-    '<span class="chip' + (ingredientInStock(state, i) ? ' ok' : '') + '">' + esc(i) + '</span>').join('');
+    '<span class="chip' + CHIP[ingredientStatus(state, i)] + '">' + esc(i) + '</span>').join('');
+  const ready = readinessLine(recipeStock(state, r), (r.ingredients || []).length);
   const addBtn = menuOpenDay
     ? '<button class="btn small" data-action="menu-add" data-day="' + esc(menuOpenDay) + '" data-id="' + r.id + '">+ ' + esc(menuOpenDay) + '</button>'
     : '';
@@ -1384,7 +1412,7 @@ function renderRecipeRow(state, r) {
   return '<div class="card recipe">' +
     '<div class="row"><div><h3>' + esc(r.name) + (r.auto ? ' <span class="chip ex">auto</span>' : '') + '</h3>' +
     (r.note ? '<span class="sub">' + esc(r.note) + '</span>' : '') + '</div></div>' +
-    (chips ? '<div class="chips-row">' + chips + '</div>' : '') +
+    (chips ? '<div class="chips-row">' + chips + '</div>' : '') + ready +
     '<div class="actions">' + addBtn +
     '<button class="btn ghost small" data-action="recipe-open" data-id="' + r.id + '">Open</button>' + shareBtn +
     '</div></div>';
@@ -1412,6 +1440,15 @@ function renderRecipesView(state) {
       (rs.length
         ? '<ul class="menu-list">' + rs.map(r => '<li><span>' + esc(r.name) + '</span><button class="x" title="remove" data-action="menu-remove" data-day="' + esc(menuOpenDay) + '" data-id="' + r.id + '">×</button></li>').join('') + '</ul>'
         : '<p class="why">Nothing picked yet.</p>') +
+      (function () { // day-level stock heads-up across all its recipes — informational, never blocks
+        if (!rs.length) return '';
+        const tot = { have: 0, low: 0, missing: 0 };
+        rs.forEach(r => { const c = recipeStock(state, r); tot.have += c.have; tot.low += c.low; tot.missing += c.missing; });
+        const dishes = rs.length + ' dish' + (rs.length > 1 ? 'es' : '');
+        if (tot.low) return '<p class="why warn">' + dishes + ' · ' + tot.low + ' ingredient' + (tot.low > 1 ? 's' : '') + ' running low — worth a reorder before this day</p>';
+        if (tot.missing) return '<p class="why">' + dishes + ' · ' + tot.missing + ' ingredient' + (tot.missing > 1 ? 's' : '') + ' not in your list yet</p>';
+        return '<p class="why ok">' + dishes + ' · everything’s in stock ✓</p>';
+      })() +
       '<p class="why">Tap <b>+ ' + esc(menuOpenDay) + '</b> on any recipe below to add it here.</p></div>';
   }
   planner += '</div>';
@@ -1510,7 +1547,7 @@ function renderFooter(state) {
     ? 'Family link (share this exact link): ' + location.origin + location.pathname + '#h=' + householdId + '<br>'
     : '';
   document.getElementById('footerBox').innerHTML = share +
-    'Home OS v2.4 · the family list tracks each item per vendor · Backup saves a copy of everything.';
+    'Home OS v2.5 · the family list tracks each item per vendor · Backup saves a copy of everything.';
 }
 
 /* ---------- stock check flow (tracked repository items only) ---------- */
@@ -2054,6 +2091,20 @@ function runSelfTest() {
   const rec = upsertRecipeFromForm(st8, { name: 'Paneer Bhurji', course: 'Sabzis & stir-frys', sub: '', ingredients: 'Paneer\nOnions\nTomato', method: 'Crumble and cook', note: '' });
   ok('recipe saved with ingredients', st8.recipes.length === 1 && rec.ingredients.length === 3 && rec.ingredients[0] === 'Paneer');
   ok('ingredientInStock matches pantry', ingredientInStock(st8, 'Paneer') === true && ingredientInStock(st8, 'Saffron') === false);
+  // v2.5: ingredient stock traffic-light (have / low / missing) — verification, never blocks
+  const stA = testState();
+  stA.items = [
+    blankItem({ id: uid(), item: 'Paneer', category: 'dairy', qty_per_person_per_day: 0 }),           // tracked but not activated → have
+    blankItem({ id: uid(), item: 'Tomato', category: 'fruits-vegetables' }),                            // day-to-day → have
+    blankItem({ id: uid(), item: 'Almonds', category: 'nuts-dried-fruits-seeds', qty_per_person_per_day: 10, people_served: 5, current_stock: 30, stock_updated_at: todayKey(), vendor_lead_time_days: 2, buffer_days: 2, storage_ceiling: 1000, usual_order_qty: 500 }) // tracked + low → low
+  ];
+  ok('ingredientStatus: have (in list)', ingredientStatus(stA, 'Paneer') === 'have' && ingredientStatus(stA, 'Tomato') === 'have');
+  ok('ingredientStatus: low (tracked + triggered)', ingredientStatus(stA, 'Almonds') === 'low');
+  ok('ingredientStatus: missing (not in list)', ingredientStatus(stA, 'Wasabi') === 'missing');
+  const rc = recipeStock(stA, { ingredients: ['Paneer', 'Almonds', 'Wasabi'] });
+  ok('recipeStock counts each state', rc.have === 1 && rc.low === 1 && rc.missing === 1);
+  ok('readiness line flags low first', readinessLine(rc, 3).includes('running low'));
+  ok('readiness line all-in when clean', readinessLine({ have: 2, low: 0, missing: 0 }, 2).includes('all ingredients in stock'));
   ok('recipesForItem reverse-lookup works', recipesForItem(st8, { item: 'Paneer' }).length === 1);
   ok('recipe message formats for the cooks', recipeMessage(st8, rec).indexOf('🍲 Paneer Bhurji') === 0 && recipeMessage(st8, rec).includes('Ingredients: Paneer, Onions, Tomato'));
   toggleMenuRecipe(st8, 'Mon', rec.id);
@@ -2094,7 +2145,7 @@ function runSelfTest() {
   ok('un-activated item has zero daily consumption', dailyConsumption(cat) === 0);
   mode = savedMode;
   const failed = results.filter(r => r.startsWith('FAIL'));
-  console.log('Home OS v2.4 self-test:\n' + results.join('\n'));
+  console.log('Home OS v2.5 self-test:\n' + results.join('\n'));
   alert('Self-test: ' + (results.length - failed.length) + '/' + results.length + ' passed' + (failed.length ? '\n' + failed.join('\n') : ''));
 }
 if (location.hash.indexOf('selftest') >= 0) runSelfTest();
