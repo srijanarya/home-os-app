@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home OS — v2.3</title>
+<title>Home OS — v2.4</title>
 <style>
   :root{
     --ink:#1c1a17; --ink-soft:#4a453e;
@@ -174,7 +174,7 @@
 
 <header>
   <div>
-    <span class="eyebrow">Home OS · v2.3</span>
+    <span class="eyebrow">Home OS · v2.4</span>
     <h1 id="pageTitle">Morning digest</h1>
   </div>
   <div class="hdr-actions">
@@ -188,6 +188,7 @@
   <button data-tab="digest" class="active">Digest<span class="badge" id="digestBadge" hidden></span></button>
   <button data-tab="items">Items</button>
   <button data-tab="recipes">Recipes</button>
+  <button data-tab="garden">Garden</button>
   <button data-tab="log">Log</button>
 </nav>
 
@@ -375,9 +376,33 @@
   </form>
 </dialog>
 
+<dialog id="plantDialog">
+  <form id="plantForm" method="dialog" novalidate>
+    <h2 id="plantDlgTitle">Plant</h2>
+    <p class="d-sub">Add care notes and a schedule so anyone — or the help — can look after it.</p>
+    <input type="hidden" name="id">
+    <div class="grid">
+      <div class="field"><label for="pl-name">Name</label><input id="pl-name" name="name" required></div>
+      <div class="field"><label for="pl-botanical">Botanical name</label><input id="pl-botanical" name="botanical" placeholder="e.g. Ocimum tenuiflorum"></div>
+      <div class="field"><label for="pl-status">Status</label><select id="pl-status" name="status"><option value="growing">Growing now</option><option value="to-introduce">To introduce</option></select></div>
+      <div class="field"><label for="pl-location">Where it is</label><input id="pl-location" name="location" placeholder="e.g. studio, balcony"></div>
+      <div class="field full"><label for="pl-care">Care (water, light, feeding, problems)</label><textarea id="pl-care" name="care" rows="4"></textarea></div>
+      <div class="field full"><label for="pl-schedule">Schedule</label><input id="pl-schedule" name="schedule" placeholder="e.g. water every 2 days, feed monthly"></div>
+      <div class="field full"><label for="pl-note">Note</label><input id="pl-note" name="note"></div>
+    </div>
+    <div class="d-actions">
+      <span style="display:flex;gap:8px;">
+        <button type="button" class="btn ghost" data-action="plant-cancel">Close</button>
+        <button type="button" class="btn danger" id="plantDelBtn" data-action="plant-delete" hidden>Delete</button>
+      </span>
+      <button type="submit" class="btn" value="save">Save plant</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 'use strict';
-/* ===== Home OS v2.3 — shared household tracker =====
+/* ===== Home OS v2.4 — shared household tracker =====
    v2.1: admin-managed category tree (day-to-day categories untracked),
    vetting = vendor-item pair (repository entries are vetted by definition),
    trials as separate flow, CSV bulk import for the structured data doc. */
@@ -521,7 +546,11 @@ function seedItems() {
 }
 function emptyState() {
   return { schemaVersion: 2, household: null, items: [], log: [], digest_decisions: {}, outbox: [],
-    categories: defaultCategories(), admins: DEFAULT_ADMINS.slice(), recipes: [], menu: {} };
+    categories: defaultCategories(), admins: DEFAULT_ADMINS.slice(), recipes: [], menu: {}, plants: [] };
+}
+function blankPlant(o) {
+  return Object.assign({ id: uid(), name: '', botanical: '', status: 'growing', location: '',
+    care: '', schedule: '', note: '', auto: false }, o);
 }
 
 const RECIPE_COURSES = [
@@ -666,13 +695,14 @@ const db = {
   }).then(r => r[0]),
   updateHousehold: (hh, patch) => dbReq('households?id=eq.' + hh, { method: 'PATCH', body: JSON.stringify(patch) }),
   fetchAll: async (hh) => {
-    const [households, items, log, decisions, recipes, recipes_menu] = await Promise.all([
+    const [households, items, log, decisions, recipes, recipes_menu, plants] = await Promise.all([
       dbReq('households?id=eq.' + hh + '&select=name,categories,admins'),
       dbReq('items?household_id=eq.' + hh + '&select=id,data'),
       dbReq('order_log?household_id=eq.' + hh + '&select=entry&order=created_at.desc&limit=200'),
       dbReq('decisions?household_id=eq.' + hh + '&day=eq.' + todayKey() + '&select=item_id,decision'),
       dbReq('recipes?household_id=eq.' + hh + '&select=id,data'),
-      dbReq('menu?household_id=eq.' + hh + '&select=day,recipe_ids')
+      dbReq('menu?household_id=eq.' + hh + '&select=day,recipe_ids'),
+      dbReq('plants?household_id=eq.' + hh + '&select=id,data')
     ]);
     const dec = {}; decisions.forEach(d => dec[d.item_id] = d.decision);
     const menu = {}; recipes_menu.forEach(m => menu[m.day] = m.recipe_ids);
@@ -684,7 +714,8 @@ const db = {
       log: log.map(r => r.entry),
       digest_decisions: { [todayKey()]: dec },
       recipes: recipes.map(r => Object.assign({}, r.data, { id: r.id })),
-      menu: menu
+      menu: menu,
+      plants: plants.map(r => Object.assign({}, r.data, { id: r.id }))
     };
   },
   upsertItem: (hh, item) => dbReq('items?on_conflict=id', {
@@ -708,7 +739,12 @@ const db = {
   upsertMenu: (hh, day, recipeIds) => dbReq('menu?on_conflict=household_id,day', {
     method: 'POST', prefer: 'resolution=merge-duplicates',
     body: JSON.stringify({ household_id: hh, day, recipe_ids: recipeIds })
-  })
+  }),
+  upsertPlant: (hh, plant) => dbReq('plants?on_conflict=id', {
+    method: 'POST', prefer: 'resolution=merge-duplicates',
+    body: JSON.stringify({ id: plant.id, household_id: hh, data: plant, updated_at: new Date().toISOString() })
+  }),
+  deletePlant: (hh, id) => dbReq('plants?id=eq.' + id, { method: 'DELETE' })
 };
 
 /* outbox: every remote write queues first; flush is safe to repeat */
@@ -733,6 +769,8 @@ async function flushOutbox(state) {
       else if (w.kind === 'recipe') await db.upsertRecipe(householdId, w.payload);
       else if (w.kind === 'delete-recipe') await db.deleteRecipe(householdId, w.payload.id);
       else if (w.kind === 'menu') await db.upsertMenu(householdId, w.payload.day, w.payload.recipe_ids);
+      else if (w.kind === 'plant') await db.upsertPlant(householdId, w.payload);
+      else if (w.kind === 'delete-plant') await db.deletePlant(householdId, w.payload.id);
       state.outbox.shift();
       saveCache(state);
     }
@@ -758,6 +796,7 @@ function loadCache() {
         if (!Array.isArray(s.outbox)) s.outbox = [];
         if (!Array.isArray(s.recipes)) s.recipes = [];
         if (!s.menu || typeof s.menu !== 'object') s.menu = {};
+        if (!Array.isArray(s.plants)) s.plants = [];
         return s;
       }
     }
@@ -1068,13 +1107,14 @@ function render(state) {
     return;
   }
   document.getElementById('tabsNav').style.display = '';
-  const titles = { digest: 'Morning digest', items: 'Items — the family list', recipes: 'Recipes & menu', log: 'Order log' };
+  const titles = { digest: 'Morning digest', items: 'Items — the family list', recipes: 'Recipes & menu', garden: 'Garden', log: 'Order log' };
   document.getElementById('pageTitle').textContent = titles[currentTab];
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
   const banners = renderBanners(state);
   if (currentTab === 'digest') view.innerHTML = banners + renderBasketSection(state) + renderOnItsWay(state) + renderDigestView(state);
   else if (currentTab === 'items') view.innerHTML = banners + renderItemsView(state);
   else if (currentTab === 'recipes') view.innerHTML = banners + renderRecipesView(state);
+  else if (currentTab === 'garden') view.innerHTML = banners + renderGardenView(state);
   else view.innerHTML = banners + renderLogView(state);
   const pending = buildDigestLines(state).filter(l => !l.decision && l.laneInfo.lane !== 'STOP').length;
   const badge = document.getElementById('digestBadge');
@@ -1396,6 +1436,64 @@ function renderRecipesView(state) {
   return addBar + searchBar + (q ? '' : planner) + lib;
 }
 
+/* ---------- garden / plant care ---------- */
+function persistPlant(state, p) { saveCache(state); queueWrite(state, 'plant', p); }
+function upsertPlantFromForm(state, data) {
+  const existing = data.id ? state.plants.find(p => p.id === data.id) : null;
+  const next = blankPlant({
+    id: existing ? existing.id : uid(),
+    name: (data.name || '').trim(), botanical: (data.botanical || '').trim(),
+    status: data.status === 'to-introduce' ? 'to-introduce' : 'growing',
+    location: (data.location || '').trim(), care: (data.care || '').trim(),
+    schedule: (data.schedule || '').trim(), note: (data.note || '').trim(), auto: false
+  });
+  if (existing) Object.assign(existing, next); else state.plants.push(next);
+  persistPlant(state, existing || next);
+  return next;
+}
+function removePlant(state, id) {
+  const i = state.plants.findIndex(p => p.id === id);
+  if (i < 0) return;
+  state.plants.splice(i, 1);
+  saveCache(state);
+  queueWrite(state, 'delete-plant', { id });
+}
+function plantMessage(state, p) {
+  let m = '🪴 ' + p.name + (p.botanical ? ' (' + p.botanical + ')' : '');
+  if (p.location) m += '\nWhere: ' + p.location;
+  if (p.care) m += '\nCare: ' + p.care;
+  if (p.schedule) m += '\nSchedule: ' + p.schedule;
+  if (p.note) m += '\nNote: ' + p.note;
+  return m;
+}
+function renderPlantCard(state, p) {
+  const shareBtn = navigator.share
+    ? '<button class="btn ghost small" data-action="plant-share" data-id="' + p.id + '">Send care</button>'
+    : '<button class="btn ghost small" data-action="plant-copy" data-id="' + p.id + '">Copy care</button>';
+  const needsCare = !p.care && !p.schedule;
+  return '<div class="card">' +
+    '<div class="row"><div><h3>' + esc(p.name) + (p.botanical ? ' <span class="hindi">' + esc(p.botanical) + '</span>' : '') + '</h3>' +
+    (p.location ? '<span class="sub">' + esc(p.location) + '</span>' : '') + '</div>' +
+    (needsCare ? '<span class="chip warn">care TBD</span>' : '<span class="chip ok">care set</span>') + '</div>' +
+    (p.care ? '<p class="why">🌿 ' + esc(p.care) + '</p>' : '<p class="why">No care notes yet — tap Open to add how to look after it.</p>') +
+    (p.note ? '<p class="why">' + esc(p.note) + '</p>' : '') +
+    '<div class="actions"><button class="btn ghost small" data-action="plant-open" data-id="' + p.id + '">Open</button>' + shareBtn + '</div>' +
+    '</div>';
+}
+function renderGardenView(state) {
+  const addBar = '<div class="actions" style="margin:0 0 6px;"><button class="btn" data-action="plant-add">+ Add plant</button></div>';
+  if (!state.plants.length) return addBar + '<div class="empty">No plants yet — tap “+ Add plant” to start the garden register.</div>';
+  const growing = state.plants.filter(p => p.status !== 'to-introduce');
+  const introduce = state.plants.filter(p => p.status === 'to-introduce');
+  const tbd = state.plants.filter(p => !p.care && !p.schedule).length;
+  let html = addBar;
+  if (tbd) html += '<div class="note quiet">🌱 ' + tbd + ' plant' + (tbd > 1 ? 's' : '') + ' still need care notes — open one to add how to look after it, then “Send care” shares it with the help. Check the pre-filled botanical names too.</div>';
+  if (growing.length) html += '<div class="group-h">Growing now</div>' + growing.map(p => renderPlantCard(state, p)).join('');
+  if (introduce.length) html += '<div class="group-h">To introduce</div>' + introduce.map(p => renderPlantCard(state, p)).join('');
+  html += '<div class="note quiet" style="margin-top:16px;">🍂 <b>Compost:</b> none at Arya House or Happyverse yet — a plan to map when the time is right, in line with the household’s food &amp; nutrition practices.</div>';
+  return html;
+}
+
 function renderLogView(state) {
   if (!state.log.length) return '<div class="empty">No orders yet. When a basket is marked ordered, it lands here — what, from where, why, at what price, and who ordered.</div>';
   const arrivedCell = e =>
@@ -1412,7 +1510,7 @@ function renderFooter(state) {
     ? 'Family link (share this exact link): ' + location.origin + location.pathname + '#h=' + householdId + '<br>'
     : '';
   document.getElementById('footerBox').innerHTML = share +
-    'Home OS v2.3 · the family list tracks each item per vendor · Backup saves a copy of everything.';
+    'Home OS v2.4 · the family list tracks each item per vendor · Backup saves a copy of everything.';
 }
 
 /* ---------- stock check flow (tracked repository items only) ---------- */
@@ -1505,6 +1603,7 @@ async function boot() {
       state.digest_decisions = remote.digest_decisions;
       state.recipes = remote.recipes;
       state.menu = remote.menu;
+      state.plants = remote.plants;
       if (remote.categories) state.categories = remote.categories;
       if (remote.admins) state.admins = remote.admins;
       mode = 'shared';
@@ -1597,6 +1696,23 @@ function openRecipeDialog(state, id) {
   dlg.showModal();
 }
 
+function openPlantDialog(state, id) {
+  const dlg = document.getElementById('plantDialog');
+  const f = document.getElementById('plantForm');
+  f.reset();
+  const p = id ? state.plants.find(x => x.id === id) : null;
+  document.getElementById('plantDlgTitle').textContent = p ? p.name : 'Add plant';
+  document.getElementById('plantDelBtn').hidden = !p;
+  if (p) document.getElementById('plantDelBtn').dataset.id = p.id;
+  const set = (n, v) => { if (f.elements[n]) f.elements[n].value = v == null ? '' : v; };
+  set('id', p ? p.id : '');
+  if (p) {
+    set('name', p.name); set('botanical', p.botanical); set('status', p.status);
+    set('location', p.location); set('care', p.care); set('schedule', p.schedule); set('note', p.note);
+  } else { set('status', 'growing'); }
+  dlg.showModal();
+}
+
 /* ---------- events (one delegated listener) ---------- */
 document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('[data-action]');
@@ -1648,6 +1764,16 @@ document.addEventListener('click', (ev) => {
       else copyText(msg).then(() => { btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Send to kitchen'; }, 1500); });
       break;
     }
+    case 'plant-add': openPlantDialog(state, null); break;
+    case 'plant-open': openPlantDialog(state, id); break;
+    case 'plant-cancel': document.getElementById('plantDialog').close('cancel'); break;
+    case 'plant-delete': {
+      const p = state.plants.find(x => x.id === btn.dataset.id);
+      if (p && confirm('Remove plant "' + p.name + '" for everyone?')) { removePlant(state, btn.dataset.id); document.getElementById('plantDialog').close(); render(state); }
+      break;
+    }
+    case 'plant-share': { const p = state.plants.find(x => x.id === id); if (p) navigator.share({ text: plantMessage(state, p) }).catch(() => {}); break; }
+    case 'plant-copy': { const p = state.plants.find(x => x.id === id); if (p) copyText(plantMessage(state, p)).then(() => { btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy care'; }, 1500); }); break; }
     case 'quick-add': {
       document.getElementById('quickForm').reset();
       document.getElementById('q-category').innerHTML = catOptionsHTML(state, 'grains-legumes-pulses');
@@ -1774,6 +1900,17 @@ document.getElementById('recipeForm').addEventListener('submit', (ev) => {
   currentTab = 'recipes';
   render(state);
 });
+document.getElementById('plantForm').addEventListener('submit', (ev) => {
+  const form = ev.target;
+  if (!form.elements.name.value.trim()) { ev.preventDefault(); form.elements.name.focus(); return; }
+  upsertPlantFromForm(state, {
+    id: form.elements.id.value, name: form.elements.name.value, botanical: form.elements.botanical.value,
+    status: form.elements.status.value, location: form.elements.location.value,
+    care: form.elements.care.value, schedule: form.elements.schedule.value, note: form.elements.note.value
+  });
+  currentTab = 'garden';
+  render(state);
+});
 document.getElementById('catForm').addEventListener('submit', (ev) => {
   ev.preventDefault();
   const form = ev.target;
@@ -1805,7 +1942,7 @@ document.addEventListener('visibilitychange', async () => {
   try {
     const remote = await db.fetchAll(householdId);
     state.items = remote.items; state.log = remote.log; state.digest_decisions = remote.digest_decisions;
-    state.recipes = remote.recipes; state.menu = remote.menu;
+    state.recipes = remote.recipes; state.menu = remote.menu; state.plants = remote.plants;
     if (remote.categories) state.categories = remote.categories;
     if (remote.admins) state.admins = remote.admins;
     mode = 'shared'; saveCache(state); render(state);
@@ -1928,6 +2065,15 @@ function runSelfTest() {
   toggleMenuRecipe(st8, 'Tue', rec.id);
   removeRecipe(st8, rec.id);
   ok('removing a recipe also clears it from the week', st8.recipes.length === 0 && (st8.menu['Tue'] || []).length === 0);
+  // v2.4: garden / plant care
+  const st9 = testState();
+  const pl = upsertPlantFromForm(st9, { name: 'Tulsi', botanical: 'Ocimum tenuiflorum', status: 'growing', location: 'balcony', care: 'water daily, morning sun', schedule: 'water daily', note: '' });
+  ok('plant saved with care fields', st9.plants.length === 1 && pl.botanical === 'Ocimum tenuiflorum' && pl.status === 'growing');
+  ok('plant care message formats for the help', plantMessage(st9, pl).indexOf('🪴 Tulsi (Ocimum tenuiflorum)') === 0 && plantMessage(st9, pl).includes('Care: water daily, morning sun'));
+  const pl2 = upsertPlantFromForm(st9, { name: 'Stevia', status: 'to-introduce' });
+  ok('to-introduce status persists', st9.plants.find(p => p.id === pl2.id).status === 'to-introduce');
+  removePlant(st9, pl.id);
+  ok('removing a plant works', st9.plants.length === 1 && !st9.plants.find(p => p.id === pl.id));
   /* fraction + quick add */
   const st2 = testState();
   const it3 = Object.assign(base(), { id: uid(), storage_ceiling: 800 });
@@ -1948,7 +2094,7 @@ function runSelfTest() {
   ok('un-activated item has zero daily consumption', dailyConsumption(cat) === 0);
   mode = savedMode;
   const failed = results.filter(r => r.startsWith('FAIL'));
-  console.log('Home OS v2.3 self-test:\n' + results.join('\n'));
+  console.log('Home OS v2.4 self-test:\n' + results.join('\n'));
   alert('Self-test: ' + (results.length - failed.length) + '/' + results.length + ' passed' + (failed.length ? '\n' + failed.join('\n') : ''));
 }
 if (location.hash.indexOf('selftest') >= 0) runSelfTest();
