@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home OS — v2.1</title>
+<title>Home OS — v2.2</title>
 <style>
   :root{
     --ink:#1c1a17; --ink-soft:#4a453e;
@@ -160,7 +160,7 @@
 
 <header>
   <div>
-    <span class="eyebrow">Home OS · v2.1</span>
+    <span class="eyebrow">Home OS · v2.2</span>
     <h1 id="pageTitle">Morning digest</h1>
   </div>
   <div class="hdr-actions">
@@ -339,7 +339,7 @@
 
 <script>
 'use strict';
-/* ===== Home OS v2.1 — shared household tracker =====
+/* ===== Home OS v2.2 — shared household tracker =====
    v2.1: admin-managed category tree (day-to-day categories untracked),
    vetting = vendor-item pair (repository entries are vetted by definition),
    trials as separate flow, CSV bulk import for the structured data doc. */
@@ -1198,7 +1198,7 @@ function renderFooter(state) {
     ? 'Family link (share this exact link): ' + location.origin + location.pathname + '#h=' + householdId + '<br>'
     : '';
   document.getElementById('footerBox').innerHTML = share +
-    'Home OS v2.1 · the family list tracks each item per vendor · Backup saves a copy of everything.';
+    'Home OS v2.2 · the family list tracks each item per vendor · Backup saves a copy of everything.';
 }
 
 /* ---------- stock check flow (tracked repository items only) ---------- */
@@ -1656,7 +1656,7 @@ function runSelfTest() {
   ok('un-activated item has zero daily consumption', dailyConsumption(cat) === 0);
   mode = savedMode;
   const failed = results.filter(r => r.startsWith('FAIL'));
-  console.log('Home OS v2.1 self-test:\n' + results.join('\n'));
+  console.log('Home OS v2.2 self-test:\n' + results.join('\n'));
   alert('Self-test: ' + (results.length - failed.length) + '/' + results.length + ' passed' + (failed.length ? '\n' + failed.join('\n') : ''));
 }
 if (location.hash.indexOf('selftest') >= 0) runSelfTest();
