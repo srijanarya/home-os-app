@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Home OS — v2.2</title>
+<title>Home OS — v2.3</title>
 <style>
   :root{
     --ink:#1c1a17; --ink-soft:#4a453e;
@@ -87,6 +87,20 @@
   .stop-reason{color:var(--clay);font-size:13.5px;margin:6px 0 0;}
   .resolved{opacity:.62;}
 
+  .planner{border:1.5px solid var(--sage);border-radius:3px;background:var(--sage-soft);padding:14px 16px;margin:0 0 16px;}
+  .planner h2{margin:0 0 2px;font-size:18px;}
+  .days{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 0;}
+  .days .day{flex:1;min-width:38px;appearance:none;border:1px solid var(--line);background:var(--panel);border-radius:3px;padding:8px 4px;font-family:var(--mono);font-size:12px;cursor:pointer;position:relative;color:var(--ink);}
+  .days .day.today{border-color:var(--amber);color:var(--amber);font-weight:600;}
+  .days .day.filled{background:var(--sage);color:#fff;border-color:var(--sage);}
+  .days .day .dn{display:inline-block;margin-left:3px;font-size:10px;opacity:.85;}
+  .day-detail{background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:12px 14px;margin:10px 0 0;}
+  .menu-list{list-style:none;margin:8px 0;padding:0;}
+  .menu-list li{padding:5px 0;border-bottom:1px dashed var(--line);font-size:15px;display:flex;justify-content:space-between;align-items:center;}
+  .menu-list li .x{appearance:none;border:none;background:none;color:var(--clay);font-size:18px;cursor:pointer;line-height:1;padding:0 4px;}
+  .chips-row{display:flex;gap:5px;flex-wrap:wrap;margin:6px 0 2px;}
+  .rsearch{width:100%;margin:0 0 12px;font-size:15px;padding:9px 11px;}
+  .card.recipe h3{font-size:16px;}
   .basket{border:1.5px solid var(--sage);border-radius:3px;background:var(--sage-soft);padding:14px 16px;margin:0 0 16px;}
   .basket h2{margin:0 0 2px;font-size:18px;}
   .basket .b-sub{font-size:13.5px;color:var(--ink-soft);font-style:italic;margin:0 0 10px;}
@@ -160,7 +174,7 @@
 
 <header>
   <div>
-    <span class="eyebrow">Home OS · v2.2</span>
+    <span class="eyebrow">Home OS · v2.3</span>
     <h1 id="pageTitle">Morning digest</h1>
   </div>
   <div class="hdr-actions">
@@ -173,6 +187,7 @@
 <nav class="tabs" aria-label="Views" id="tabsNav">
   <button data-tab="digest" class="active">Digest<span class="badge" id="digestBadge" hidden></span></button>
   <button data-tab="items">Items</button>
+  <button data-tab="recipes">Recipes</button>
   <button data-tab="log">Log</button>
 </nav>
 
@@ -337,9 +352,32 @@
   </div>
 </dialog>
 
+<dialog id="recipeDialog">
+  <form id="recipeForm" method="dialog" novalidate>
+    <h2 id="recipeDlgTitle">Recipe</h2>
+    <p class="d-sub">Add the ingredients and method so anyone — or the cooks — can make it.</p>
+    <input type="hidden" name="id">
+    <div class="grid">
+      <div class="field full"><label for="rc-name">Name</label><input id="rc-name" name="name" required></div>
+      <div class="field"><label for="rc-course">Course</label><select id="rc-course" name="course"></select></div>
+      <div class="field"><label for="rc-sub">Sub-type (Mains)</label><input id="rc-sub" name="sub" list="subList" placeholder="Roti / Rice & Millets…"><datalist id="subList"><option>Roti</option><option>Dosa &amp; Chila</option><option>Rice &amp; Millets</option></datalist></div>
+      <div class="field full"><label for="rc-ing">Ingredients (one per line)</label><textarea id="rc-ing" name="ingredients" rows="4"></textarea></div>
+      <div class="field full"><label for="rc-method">Method</label><textarea id="rc-method" name="method" rows="4" placeholder="How to make it — for Sia / Swapnali"></textarea></div>
+      <div class="field full"><label for="rc-note">Short note</label><input id="rc-note" name="note"></div>
+    </div>
+    <div class="d-actions">
+      <span style="display:flex;gap:8px;">
+        <button type="button" class="btn ghost" data-action="recipe-cancel">Close</button>
+        <button type="button" class="btn danger" id="recipeDelBtn" data-action="recipe-delete" hidden>Delete</button>
+      </span>
+      <button type="submit" class="btn" value="save">Save recipe</button>
+    </div>
+  </form>
+</dialog>
+
 <script>
 'use strict';
-/* ===== Home OS v2.2 — shared household tracker =====
+/* ===== Home OS v2.3 — shared household tracker =====
    v2.1: admin-managed category tree (day-to-day categories untracked),
    vetting = vendor-item pair (repository entries are vetted by definition),
    trials as separate flow, CSV bulk import for the structured data doc. */
@@ -483,7 +521,23 @@ function seedItems() {
 }
 function emptyState() {
   return { schemaVersion: 2, household: null, items: [], log: [], digest_decisions: {}, outbox: [],
-    categories: defaultCategories(), admins: DEFAULT_ADMINS.slice() };
+    categories: defaultCategories(), admins: DEFAULT_ADMINS.slice(), recipes: [], menu: {} };
+}
+
+const RECIPE_COURSES = [
+  { id: 'Mains', name: 'Mains', subs: ['Roti', 'Dosa & Chila', 'Rice & Millets'] },
+  { id: 'Dals', name: 'Dals' },
+  { id: 'Sabzis & stir-frys', name: 'Sabzis & stir-frys' },
+  { id: 'Soups', name: 'Soups' },
+  { id: 'Salads & sides', name: 'Salads & sides' },
+  { id: 'Desserts & snacks', name: 'Desserts & snacks' },
+  { id: 'Teas & drinks', name: 'Teas & drinks' }
+];
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+function todayWeekday() { return WEEKDAYS[(new Date().getDay() + 6) % 7]; } // Mon=0
+function blankRecipe(o) {
+  return Object.assign({ id: uid(), name: '', course: 'Mains', sub: null, note: '',
+    ingredients: [], method: '', auto: false }, o);
 }
 
 /* ---------- computed (core math unchanged) ---------- */
@@ -612,20 +666,25 @@ const db = {
   }).then(r => r[0]),
   updateHousehold: (hh, patch) => dbReq('households?id=eq.' + hh, { method: 'PATCH', body: JSON.stringify(patch) }),
   fetchAll: async (hh) => {
-    const [households, items, log, decisions] = await Promise.all([
+    const [households, items, log, decisions, recipes, recipes_menu] = await Promise.all([
       dbReq('households?id=eq.' + hh + '&select=name,categories,admins'),
       dbReq('items?household_id=eq.' + hh + '&select=id,data'),
       dbReq('order_log?household_id=eq.' + hh + '&select=entry&order=created_at.desc&limit=200'),
-      dbReq('decisions?household_id=eq.' + hh + '&day=eq.' + todayKey() + '&select=item_id,decision')
+      dbReq('decisions?household_id=eq.' + hh + '&day=eq.' + todayKey() + '&select=item_id,decision'),
+      dbReq('recipes?household_id=eq.' + hh + '&select=id,data'),
+      dbReq('menu?household_id=eq.' + hh + '&select=day,recipe_ids')
     ]);
     const dec = {}; decisions.forEach(d => dec[d.item_id] = d.decision);
+    const menu = {}; recipes_menu.forEach(m => menu[m.day] = m.recipe_ids);
     const hhRow = households[0] || {};
     return {
       categories: Array.isArray(hhRow.categories) && hhRow.categories.length ? hhRow.categories : null,
       admins: Array.isArray(hhRow.admins) && hhRow.admins.length ? hhRow.admins : null,
       items: items.map(r => Object.assign({}, r.data, { id: r.id })),
       log: log.map(r => r.entry),
-      digest_decisions: { [todayKey()]: dec }
+      digest_decisions: { [todayKey()]: dec },
+      recipes: recipes.map(r => Object.assign({}, r.data, { id: r.id })),
+      menu: menu
     };
   },
   upsertItem: (hh, item) => dbReq('items?on_conflict=id', {
@@ -640,6 +699,15 @@ const db = {
   upsertDecision: (hh, day, itemId, decision) => dbReq('decisions?on_conflict=household_id,day,item_id', {
     method: 'POST', prefer: 'resolution=merge-duplicates',
     body: JSON.stringify({ household_id: hh, day, item_id: itemId, decision })
+  }),
+  upsertRecipe: (hh, recipe) => dbReq('recipes?on_conflict=id', {
+    method: 'POST', prefer: 'resolution=merge-duplicates',
+    body: JSON.stringify({ id: recipe.id, household_id: hh, data: recipe, updated_at: new Date().toISOString() })
+  }),
+  deleteRecipe: (hh, id) => dbReq('recipes?id=eq.' + id, { method: 'DELETE' }),
+  upsertMenu: (hh, day, recipeIds) => dbReq('menu?on_conflict=household_id,day', {
+    method: 'POST', prefer: 'resolution=merge-duplicates',
+    body: JSON.stringify({ household_id: hh, day, recipe_ids: recipeIds })
   })
 };
 
@@ -662,6 +730,9 @@ async function flushOutbox(state) {
       else if (w.kind === 'log') await db.appendLog(householdId, w.payload);
       else if (w.kind === 'decision') await db.upsertDecision(householdId, w.payload.day, w.payload.item_id, w.payload.decision);
       else if (w.kind === 'household') await db.updateHousehold(householdId, w.payload);
+      else if (w.kind === 'recipe') await db.upsertRecipe(householdId, w.payload);
+      else if (w.kind === 'delete-recipe') await db.deleteRecipe(householdId, w.payload.id);
+      else if (w.kind === 'menu') await db.upsertMenu(householdId, w.payload.day, w.payload.recipe_ids);
       state.outbox.shift();
       saveCache(state);
     }
@@ -685,6 +756,8 @@ function loadCache() {
         if (!Array.isArray(s.categories) || !s.categories.length) s.categories = defaultCategories();
         if (!Array.isArray(s.admins) || !s.admins.length) s.admins = DEFAULT_ADMINS.slice();
         if (!Array.isArray(s.outbox)) s.outbox = [];
+        if (!Array.isArray(s.recipes)) s.recipes = [];
+        if (!s.menu || typeof s.menu !== 'object') s.menu = {};
         return s;
       }
     }
@@ -980,6 +1053,8 @@ const fmtDate = d => d ? d.toLocaleDateString('en-IN', { day: 'numeric', month: 
 const fmtDays = n => !isFinite(n) ? '—' : (n < 1 ? '<1' : String(Math.floor(n)));
 let currentTab = 'digest';
 let bootScreen = null;
+let menuOpenDay = null;
+let recipeSearch = '';
 
 function render(state) {
   const view = document.getElementById('view');
@@ -993,12 +1068,13 @@ function render(state) {
     return;
   }
   document.getElementById('tabsNav').style.display = '';
-  const titles = { digest: 'Morning digest', items: 'Items — the family list', log: 'Order log' };
+  const titles = { digest: 'Morning digest', items: 'Items — the family list', recipes: 'Recipes & menu', log: 'Order log' };
   document.getElementById('pageTitle').textContent = titles[currentTab];
   document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('active', b.dataset.tab === currentTab));
   const banners = renderBanners(state);
   if (currentTab === 'digest') view.innerHTML = banners + renderBasketSection(state) + renderOnItsWay(state) + renderDigestView(state);
   else if (currentTab === 'items') view.innerHTML = banners + renderItemsView(state);
+  else if (currentTab === 'recipes') view.innerHTML = banners + renderRecipesView(state);
   else view.innerHTML = banners + renderLogView(state);
   const pending = buildDigestLines(state).filter(l => !l.decision && l.laneInfo.lane !== 'STOP').length;
   const badge = document.getElementById('digestBadge');
@@ -1121,6 +1197,7 @@ function renderItemCard(state, it) {
     '<span class="sub">' + esc(it.vendor) + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + '</span></div>' + stockChip + '</div>' +
     kpis +
     (it.replenish_note ? '<p class="why">♻︎ ' + esc(it.replenish_note) + '</p>' : '') +
+    (function () { const rs = recipesForItem(state, it); return rs.length ? '<p class="why">🍲 Used in: ' + rs.slice(0, 3).map(r => esc(r.name)).join(', ') + (rs.length > 3 ? ' +' + (rs.length - 3) + ' more' : '') + '</p>' : ''; })() +
     '<div class="actions"><button class="btn ghost small" data-action="edit-item" data-id="' + it.id + '">Edit</button></div>' +
     '</div>';
 }
@@ -1182,6 +1259,143 @@ function renderItemsView(state) {
     trialsHtml +
     (repoHtml || '<div class="empty">No items yet — add the first one.</div>');
 }
+/* ---------- recipes & menu ---------- */
+function persistRecipe(state, r) { saveCache(state); queueWrite(state, 'recipe', r); }
+function upsertRecipeFromForm(state, data) {
+  const existing = data.id ? state.recipes.find(r => r.id === data.id) : null;
+  const next = blankRecipe({
+    id: existing ? existing.id : uid(),
+    name: (data.name || '').trim(), course: data.course, sub: (data.sub || '').trim() || null,
+    note: (data.note || '').trim(), method: (data.method || '').trim(),
+    ingredients: (data.ingredients || '').split('\n').map(s => s.trim()).filter(Boolean),
+    auto: false
+  });
+  if (existing) Object.assign(existing, next); else state.recipes.push(next);
+  persistRecipe(state, existing || next);
+  return next;
+}
+function removeRecipe(state, id) {
+  const i = state.recipes.findIndex(r => r.id === id);
+  if (i < 0) return;
+  state.recipes.splice(i, 1);
+  saveCache(state);
+  queueWrite(state, 'delete-recipe', { id });
+  WEEKDAYS.forEach(day => {  // also drop from any day it's planned in
+    if ((state.menu[day] || []).includes(id)) setMenuDay(state, day, state.menu[day].filter(x => x !== id));
+  });
+}
+function setMenuDay(state, day, recipeIds) {
+  // ponytail: per-day last-write-wins. Two people editing the SAME day at once → one
+  // loses their picks (rare for a solo weekly-planner; self-heals on the next edit).
+  // Lingering deleted-recipe ids are dropped by filter(Boolean) on render, so harmless.
+  // Upgrade path if needed: per-recipe menu rows keyed (household_id, day, recipe_id).
+  state.menu[day] = recipeIds;
+  saveCache(state);
+  queueWrite(state, 'menu', { day, recipe_ids: recipeIds });
+}
+function toggleMenuRecipe(state, day, recipeId) {
+  const cur = (state.menu[day] || []).slice();
+  const i = cur.indexOf(recipeId);
+  if (i >= 0) cur.splice(i, 1); else cur.push(recipeId);
+  setMenuDay(state, day, cur);
+}
+// does the pantry hold this ingredient? (loose name/hindi match against items)
+function ingredientInStock(state, ingredientName) {
+  const n = String(ingredientName || '').toLowerCase().trim();
+  if (!n) return false;
+  return state.items.some(it => {
+    const nm = String(it.item || '').toLowerCase(), hi = String(it.hindi || '').toLowerCase();
+    return (nm && (n.includes(nm) || nm.includes(n))) || (hi && (n.includes(hi) || hi.includes(n)));
+  });
+}
+// recipes that use a given pantry item (the "leeks arrived → recipes" lookup)
+function recipesForItem(state, item) {
+  const n = String(item.item || '').toLowerCase();
+  return state.recipes.filter(r => (r.ingredients || []).some(ing => {
+    const i = String(ing).toLowerCase(); return n && (i.includes(n) || n.includes(i));
+  }));
+}
+function recipeMessage(state, r) {
+  let m = '🍲 ' + r.name;
+  if (r.ingredients && r.ingredients.length) m += '\nIngredients: ' + r.ingredients.join(', ');
+  if (r.note) m += '\nNote: ' + r.note;
+  if (r.method) m += '\n\n' + r.method;
+  return m;
+}
+function dayMenuMessage(state, day) {
+  const rs = (state.menu[day] || []).map(id => state.recipes.find(r => r.id === id)).filter(Boolean);
+  if (!rs.length) return 'Menu for ' + day + ': nothing planned yet';
+  return 'Menu for ' + day + ':\n\n' + rs.map(r => {
+    let line = '• ' + r.name + (r.ingredients && r.ingredients.length ? ' (' + r.ingredients.join(', ') + ')' : '');
+    if (r.method) line += '\n   ' + r.method.replace(/\n/g, '\n   '); // the how-to, for the cooks
+    return line;
+  }).join('\n\n');
+}
+
+function renderRecipeRow(state, r) {
+  const chips = (r.ingredients || []).slice(0, 5).map(i =>
+    '<span class="chip' + (ingredientInStock(state, i) ? ' ok' : '') + '">' + esc(i) + '</span>').join('');
+  const addBtn = menuOpenDay
+    ? '<button class="btn small" data-action="menu-add" data-day="' + esc(menuOpenDay) + '" data-id="' + r.id + '">+ ' + esc(menuOpenDay) + '</button>'
+    : '';
+  const shareBtn = navigator.share
+    ? '<button class="btn ghost small" data-action="recipe-share" data-id="' + r.id + '">Send</button>'
+    : '<button class="btn ghost small" data-action="recipe-copy" data-id="' + r.id + '">Copy</button>';
+  return '<div class="card recipe">' +
+    '<div class="row"><div><h3>' + esc(r.name) + (r.auto ? ' <span class="chip ex">auto</span>' : '') + '</h3>' +
+    (r.note ? '<span class="sub">' + esc(r.note) + '</span>' : '') + '</div></div>' +
+    (chips ? '<div class="chips-row">' + chips + '</div>' : '') +
+    '<div class="actions">' + addBtn +
+    '<button class="btn ghost small" data-action="recipe-open" data-id="' + r.id + '">Open</button>' + shareBtn +
+    '</div></div>';
+}
+function renderRecipesView(state) {
+  const addBar = '<div class="actions" style="margin:0 0 6px;"><button class="btn" data-action="recipe-add">+ Add recipe</button></div>';
+  if (!state.recipes.length) return addBar + '<div class="empty">No recipes here yet — tap “+ Add recipe” to add your first.</div>';
+
+  const q = recipeSearch.trim().toLowerCase();
+  const matches = r => !q || r.name.toLowerCase().includes(q) || (r.ingredients || []).some(i => i.toLowerCase().includes(q));
+  const searchBar = '<input id="recipeSearch" class="rsearch" placeholder="Search recipes or ingredients…" value="' + esc(recipeSearch) + '">';
+
+  const today = todayWeekday();
+  let planner = '<div class="planner"><h2>🗓️ This week</h2>' +
+    '<p class="b-sub">Tap a day to plan it, pick recipes from the library below, then send the menu to the kitchen.</p>' +
+    '<div class="days">' + WEEKDAYS.map(d => {
+      const n = (state.menu[d] || []).length;
+      return '<button class="day' + (d === today ? ' today' : '') + (n ? ' filled' : '') + (d === menuOpenDay ? ' open' : '') +
+        '" data-action="menu-day" data-day="' + d + '">' + d + (n ? '<span class="dn">' + n + '</span>' : '') + '</button>';
+    }).join('') + '</div>';
+  if (menuOpenDay) {
+    const rs = (state.menu[menuOpenDay] || []).map(id => state.recipes.find(r => r.id === id)).filter(Boolean);
+    planner += '<div class="day-detail"><div class="row"><h3>' + esc(menuOpenDay) + (menuOpenDay === today ? ' · today' : '') + '</h3>' +
+      (rs.length ? '<button class="btn small" data-action="menu-share" data-day="' + esc(menuOpenDay) + '">Send to kitchen</button>' : '') + '</div>' +
+      (rs.length
+        ? '<ul class="menu-list">' + rs.map(r => '<li><span>' + esc(r.name) + '</span><button class="x" title="remove" data-action="menu-remove" data-day="' + esc(menuOpenDay) + '" data-id="' + r.id + '">×</button></li>').join('') + '</ul>'
+        : '<p class="why">Nothing picked yet.</p>') +
+      '<p class="why">Tap <b>+ ' + esc(menuOpenDay) + '</b> on any recipe below to add it here.</p></div>';
+  }
+  planner += '</div>';
+
+  let lib = '';
+  RECIPE_COURSES.forEach(course => {
+    const inC = state.recipes.filter(r => r.course === course.id && matches(r));
+    if (!inC.length) return;
+    lib += '<div class="group-h">' + esc(course.name) + '</div>';
+    if (course.subs) {
+      course.subs.forEach(sub => {
+        const inS = inC.filter(r => r.sub === sub);
+        if (inS.length) lib += '<div class="sub-h">' + esc(sub) + '</div>' + inS.map(r => renderRecipeRow(state, r)).join('');
+      });
+      const rest = inC.filter(r => !course.subs.includes(r.sub));
+      if (rest.length) lib += rest.map(r => renderRecipeRow(state, r)).join('');
+    } else {
+      lib += inC.map(r => renderRecipeRow(state, r)).join('');
+    }
+  });
+  if (q && !lib) lib = '<div class="empty">No recipes match “' + esc(recipeSearch.trim()) + '”.</div>';
+  return addBar + searchBar + (q ? '' : planner) + lib;
+}
+
 function renderLogView(state) {
   if (!state.log.length) return '<div class="empty">No orders yet. When a basket is marked ordered, it lands here — what, from where, why, at what price, and who ordered.</div>';
   const arrivedCell = e =>
@@ -1198,7 +1412,7 @@ function renderFooter(state) {
     ? 'Family link (share this exact link): ' + location.origin + location.pathname + '#h=' + householdId + '<br>'
     : '';
   document.getElementById('footerBox').innerHTML = share +
-    'Home OS v2.2 · the family list tracks each item per vendor · Backup saves a copy of everything.';
+    'Home OS v2.3 · the family list tracks each item per vendor · Backup saves a copy of everything.';
 }
 
 /* ---------- stock check flow (tracked repository items only) ---------- */
@@ -1273,6 +1487,7 @@ function parseHousehold() {
   return m ? m[1] : null;
 }
 async function boot() {
+  menuOpenDay = null; recipeSearch = ''; // don't carry recipe-tab UI state across households
   const cached = loadCache() || emptyState();
   state = cached;
   householdId = parseHousehold() || state.household;
@@ -1288,6 +1503,8 @@ async function boot() {
       state.items = remote.items;
       state.log = remote.log;
       state.digest_decisions = remote.digest_decisions;
+      state.recipes = remote.recipes;
+      state.menu = remote.menu;
       if (remote.categories) state.categories = remote.categories;
       if (remote.admins) state.admins = remote.admins;
       mode = 'shared';
@@ -1361,6 +1578,25 @@ function openItemDialog(state, itemId, hint) {
   if (hint && form.elements.qty_per_person_per_day) form.elements.qty_per_person_per_day.focus();
 }
 
+function openRecipeDialog(state, id) {
+  const dlg = document.getElementById('recipeDialog');
+  const f = document.getElementById('recipeForm');
+  f.reset();
+  const r = id ? state.recipes.find(x => x.id === id) : null;
+  document.getElementById('recipeDlgTitle').textContent = r ? r.name : 'Add recipe';
+  document.getElementById('recipeDelBtn').hidden = !r;
+  if (r) document.getElementById('recipeDelBtn').dataset.id = r.id;
+  f.elements.course.innerHTML = RECIPE_COURSES.map(c =>
+    '<option' + (r && r.course === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>').join('');
+  const set = (n, v) => { if (f.elements[n]) f.elements[n].value = v == null ? '' : v; };
+  set('id', r ? r.id : '');
+  if (r) {
+    set('name', r.name); set('course', r.course); set('sub', r.sub);
+    set('ingredients', (r.ingredients || []).join('\n')); set('method', r.method); set('note', r.note);
+  }
+  dlg.showModal();
+}
+
 /* ---------- events (one delegated listener) ---------- */
 document.addEventListener('click', (ev) => {
   const btn = ev.target.closest('[data-action]');
@@ -1393,6 +1629,25 @@ document.addEventListener('click', (ev) => {
     }
     case 'mark-ordered': markOrdered(state, btn.dataset.vendor); render(state); break;
     case 'log-received': markReceived(state, id); render(state); break;
+    case 'recipe-add': openRecipeDialog(state, null); break;
+    case 'recipe-open': openRecipeDialog(state, id); break;
+    case 'recipe-delete': {
+      const r = state.recipes.find(x => x.id === btn.dataset.id);
+      if (r && confirm('Delete recipe "' + r.name + '" for everyone?')) { removeRecipe(state, btn.dataset.id); document.getElementById('recipeDialog').close(); render(state); }
+      break;
+    }
+    case 'recipe-cancel': document.getElementById('recipeDialog').close('cancel'); break;
+    case 'recipe-share': { const r = state.recipes.find(x => x.id === id); if (r) navigator.share({ text: recipeMessage(state, r) }).catch(() => {}); break; }
+    case 'recipe-copy': { const r = state.recipes.find(x => x.id === id); if (r) copyText(recipeMessage(state, r)).then(() => { btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Copy'; }, 1500); }); break; }
+    case 'menu-day': { menuOpenDay = (menuOpenDay === btn.dataset.day) ? null : btn.dataset.day; render(state); break; }
+    case 'menu-add': { toggleMenuRecipe(state, btn.dataset.day, id); render(state); break; }
+    case 'menu-remove': { toggleMenuRecipe(state, btn.dataset.day, id); render(state); break; }
+    case 'menu-share': {
+      const msg = dayMenuMessage(state, btn.dataset.day);
+      if (navigator.share) navigator.share({ text: msg }).catch(() => {});
+      else copyText(msg).then(() => { btn.textContent = 'Copied ✓'; setTimeout(() => { btn.textContent = 'Send to kitchen'; }, 1500); });
+      break;
+    }
     case 'quick-add': {
       document.getElementById('quickForm').reset();
       document.getElementById('q-category').innerHTML = catOptionsHTML(state, 'grains-legumes-pulses');
@@ -1500,6 +1755,25 @@ document.getElementById('trialForm').addEventListener('submit', (ev) => {
   currentTab = 'items';
   render(state);
 });
+document.addEventListener('input', (ev) => {
+  if (ev.target && ev.target.id === 'recipeSearch') {
+    recipeSearch = ev.target.value;
+    render(state);
+    const el = document.getElementById('recipeSearch');
+    if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); } // keep caret after re-render
+  }
+});
+document.getElementById('recipeForm').addEventListener('submit', (ev) => {
+  const form = ev.target;
+  if (!form.elements.name.value.trim()) { ev.preventDefault(); form.elements.name.focus(); return; }
+  upsertRecipeFromForm(state, {
+    id: form.elements.id.value, name: form.elements.name.value, course: form.elements.course.value,
+    sub: form.elements.sub.value, ingredients: form.elements.ingredients.value,
+    method: form.elements.method.value, note: form.elements.note.value
+  });
+  currentTab = 'recipes';
+  render(state);
+});
 document.getElementById('catForm').addEventListener('submit', (ev) => {
   ev.preventDefault();
   const form = ev.target;
@@ -1531,6 +1805,7 @@ document.addEventListener('visibilitychange', async () => {
   try {
     const remote = await db.fetchAll(householdId);
     state.items = remote.items; state.log = remote.log; state.digest_decisions = remote.digest_decisions;
+    state.recipes = remote.recipes; state.menu = remote.menu;
     if (remote.categories) state.categories = remote.categories;
     if (remote.admins) state.admins = remote.admins;
     mode = 'shared'; saveCache(state); render(state);
@@ -1636,6 +1911,23 @@ function runSelfTest() {
   const st7 = testState();
   const withH = upsertItemFromForm(st7, { item: 'Jeera', hindi: 'Cumin', category: 'spices-teas-herbs', qty_per_person_per_day: '', unit: 'g', people_served: '5', frequency: '', current_stock: '', reserve_units: '', backstock_target: '', unit_size: '', storage_ceiling: '', vendor: '', known_good_source: '', usual_order_qty: '', vendor_lead_time_days: '', buffer_days: '', price: '', price_ceiling: '', payment_mode: 'UPI', payment_owner: 'R', replenish_note: '', blacklist_reason: '', blacklist_flag: false });
   ok('form round-trips the hindi field', withH.hindi === 'Cumin');
+  // v2.3: recipes + menu
+  const st8 = testState();
+  st8.items = [blankItem({ id: uid(), item: 'Paneer', category: 'dairy' }), blankItem({ id: uid(), item: 'Mushrooms', category: 'fruits-vegetables' })];
+  const rec = upsertRecipeFromForm(st8, { name: 'Paneer Bhurji', course: 'Sabzis & stir-frys', sub: '', ingredients: 'Paneer\nOnions\nTomato', method: 'Crumble and cook', note: '' });
+  ok('recipe saved with ingredients', st8.recipes.length === 1 && rec.ingredients.length === 3 && rec.ingredients[0] === 'Paneer');
+  ok('ingredientInStock matches pantry', ingredientInStock(st8, 'Paneer') === true && ingredientInStock(st8, 'Saffron') === false);
+  ok('recipesForItem reverse-lookup works', recipesForItem(st8, { item: 'Paneer' }).length === 1);
+  ok('recipe message formats for the cooks', recipeMessage(st8, rec).indexOf('🍲 Paneer Bhurji') === 0 && recipeMessage(st8, rec).includes('Ingredients: Paneer, Onions, Tomato'));
+  toggleMenuRecipe(st8, 'Mon', rec.id);
+  ok('menu day assigns a recipe', (st8.menu['Mon'] || []).length === 1 && st8.menu['Mon'][0] === rec.id);
+  ok('day menu message lists the recipe', dayMenuMessage(st8, 'Mon').includes('Paneer Bhurji'));
+  ok('day menu includes the method for the cooks', dayMenuMessage(st8, 'Mon').includes('Crumble and cook'));
+  toggleMenuRecipe(st8, 'Mon', rec.id);
+  ok('toggling a menu recipe off removes it', (st8.menu['Mon'] || []).length === 0);
+  toggleMenuRecipe(st8, 'Tue', rec.id);
+  removeRecipe(st8, rec.id);
+  ok('removing a recipe also clears it from the week', st8.recipes.length === 0 && (st8.menu['Tue'] || []).length === 0);
   /* fraction + quick add */
   const st2 = testState();
   const it3 = Object.assign(base(), { id: uid(), storage_ceiling: 800 });
@@ -1656,7 +1948,7 @@ function runSelfTest() {
   ok('un-activated item has zero daily consumption', dailyConsumption(cat) === 0);
   mode = savedMode;
   const failed = results.filter(r => r.startsWith('FAIL'));
-  console.log('Home OS v2.2 self-test:\n' + results.join('\n'));
+  console.log('Home OS v2.3 self-test:\n' + results.join('\n'));
   alert('Self-test: ' + (results.length - failed.length) + '/' + results.length + ' passed' + (failed.length ? '\n' + failed.join('\n') : ''));
 }
 if (location.hash.indexOf('selftest') >= 0) runSelfTest();
