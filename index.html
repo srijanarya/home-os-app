@@ -57,6 +57,8 @@
     color:var(--sage);margin:22px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--line);
   }
   .group-h:first-of-type{margin-top:4px;}
+  .sub-h{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin:14px 0 6px 2px;}
+  .hindi{font-family:var(--mono);font-size:11px;font-weight:400;color:var(--ink-soft);letter-spacing:.02em;}
 
   .flag{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 8px;border-radius:2px;letter-spacing:.05em;color:#fff;white-space:nowrap;}
   .flag.auto{background:var(--sage);}
@@ -187,7 +189,8 @@
     <fieldset>
       <legend>Basics</legend>
       <div class="grid">
-        <div class="field full"><label for="f-item">Item</label><input id="f-item" name="item" required></div>
+        <div class="field"><label for="f-item">Item</label><input id="f-item" name="item" required></div>
+        <div class="field"><label for="f-hindi">Hindi / local name</label><input id="f-hindi" name="hindi" placeholder="e.g. Haldi"></div>
         <div class="field full"><label for="f-category">Category</label>
           <select id="f-category" name="category"></select>
         </div>
@@ -217,7 +220,7 @@
     <fieldset>
       <legend>Ordering</legend>
       <div class="grid">
-        <div class="field"><label for="f-vendor">Vendor</label><input id="f-vendor" name="vendor" list="vendorList"><datalist id="vendorList"><option>Zama Organics</option><option>GRN Organics</option><option>Blinkit</option><option>Amazon</option><option>Nature's</option></datalist></div>
+        <div class="field"><label for="f-vendor">Vendor</label><input id="f-vendor" name="vendor" list="vendorList"><datalist id="vendorList"><option>Zama Organics</option><option>GRN Organics</option><option>Blinkit</option><option>Amazon</option><option>Nature's Basket</option><option>Provilac</option><option>Satopradhan</option><option>Swiggy Instamart</option></datalist></div>
         <div class="field"><label for="f-source">Known-good brand</label><input id="f-source" name="known_good_source"></div>
         <div class="field"><label for="f-usual">Usual order qty</label><input id="f-usual" name="usual_order_qty" type="number" min="0" step="any"></div>
         <div class="field"><label for="f-lead">Lead time (days)</label><input id="f-lead" name="vendor_lead_time_days" type="number" min="0" step="1"></div>
@@ -354,18 +357,24 @@ const DEFAULT_ADMINS = ['Ritika', 'Srijan'];
 const VENDOR_NOTES = Object.assign(Object.create(null), {
   'Zama Organics': 'app · no cash',
   'GRN Organics': 'call / walk-in',
-  'Blinkit': 'COD may carry surcharge',
-  'Amazon': 'cash limits apply',
-  "Nature's": ''
+  'Blinkit': 'app · urgency',
+  'Amazon': 'app · dried & specialty',
+  "Nature's Basket": 'call / walk-in · Kandivali',
+  'Provilac': 'subscription · raw milk',
+  'Satopradhan': 'app',
+  'Swiggy Instamart': 'app · urgency'
 });
 
 function defaultCategories() {
   return [
     { id: 'dairy', name: 'Dairy', tracked: true },
     { id: 'fruits-vegetables', name: 'Fruits & vegetables', tracked: false },
+    { id: 'fruits-vegetables--mushrooms', name: 'Mushrooms', parent: 'fruits-vegetables' },
     { id: 'grains-legumes-pulses', name: 'Grains, legumes & pulses', tracked: true },
     { id: 'nuts-dried-fruits-seeds', name: 'Nuts, dried fruits & seeds', tracked: true },
     { id: 'spices-teas-herbs', name: 'Spices, teas & herbs', tracked: true },
+    { id: 'spices-teas-herbs--teas', name: 'Teas', parent: 'spices-teas-herbs' },
+    { id: 'pickles-probiotics', name: 'Pickles & probiotics', tracked: true },
     { id: 'cleaning-personal-care', name: 'Cleaning & personal care', tracked: true },
     { id: 'garden-inputs', name: 'Garden / growing inputs', tracked: true },
     { id: 'household-consumables', name: 'Household consumables', tracked: true }
@@ -448,7 +457,7 @@ function migrateCategories(state) {
 /* ---------- seed data: EXAMPLE values, the family corrects them ---------- */
 function blankItem(o) {
   return Object.assign({
-    id: uid(), item: '', category: 'grains-legumes-pulses', houses: 'shared-pool', vendor: '', known_good_source: '',
+    id: uid(), item: '', hindi: '', category: 'grains-legumes-pulses', houses: 'shared-pool', vendor: '', known_good_source: '',
     qty_per_person_per_day: 0, unit: 'g', people_served: 5, frequency: 'weekly',
     price: 0, price_ceiling: 0, payment_mode: 'UPI', payment_owner: 'Ritika',
     current_stock: 0, stock_updated_at: todayKey(), reserve_units: 0, backstock_target: 1,
@@ -801,7 +810,7 @@ function upsertItemFromForm(state, data) {
   const stockChanged = !existing || Number(data.current_stock) !== Number(existing.current_stock);
   const next = blankItem({
     id: existing ? existing.id : uid(),
-    item: data.item.trim(), category: data.category,
+    item: data.item.trim(), hindi: (data.hindi || '').trim(), category: data.category,
     vendor: data.vendor.trim(), known_good_source: data.known_good_source.trim(),
     qty_per_person_per_day: Number(data.qty_per_person_per_day) || 0, unit: data.unit,
     people_served: Number(data.people_served) || 5, frequency: data.frequency.trim(),
@@ -896,6 +905,7 @@ function parseCSV(text) {
 /* forgiving header names — Ritika's sheet won't match the template exactly */
 const CSV_ALIASES = Object.assign(Object.create(null), {
   item: ['item', 'name', 'item_name'],
+  hindi: ['hindi', 'hindi_name', 'local_name'],
   category: ['category'],
   subcategory: ['subcategory', 'sub_category', 'sub'],
   vendor: ['vendor', 'shop', 'store', 'from'],
@@ -941,7 +951,7 @@ function importItemsCSV(state, text) {
     if (!cat) { skipped.push('row ' + (idx + 2) + ' (' + name + '): unknown category "' + col(r, 'category') + '"'); return; }
     const num = (n) => { const v = Number(col(r, n)); return isFinite(v) ? v : 0; };
     const item = blankItem({
-      item: name, category: cat.id, vendor: col(r, 'vendor'),
+      item: name, hindi: col(r, 'hindi'), category: cat.id, vendor: col(r, 'vendor'),
       known_good_source: col(r, 'brand'), unit: col(r, 'unit') || 'g',
       qty_per_person_per_day: num('per_person_per_day'),
       people_served: num('people_served') || 5,
@@ -1090,20 +1100,24 @@ function renderItemCard(state, it) {
   const tracked = isTrackedItem(state, it);
   const days = daysRemaining(it);
   const lane = computeLane(it).lane;
-  const stockChip = tracked
-    ? (backstockOk(it) ? '<span class="chip ok">reserve ✓</span>' : '<span class="chip warn">no reserve</span>')
-    : '<span class="chip">day-to-day</span>';
+  const stockChip = !tracked
+    ? '<span class="chip">day-to-day</span>'
+    : dailyConsumption(it) <= 0
+      ? '<span class="chip">not set up</span>'
+      : (backstockOk(it) ? '<span class="chip ok">reserve ✓</span>' : '<span class="chip warn">no reserve</span>');
   const badge = it.blacklist.flag ? ' <span class="flag stop">STOP</span>' : '';
-  const kpis = tracked
-    ? '<div class="kpis">' +
-      '<span class="kpi">Stock ≈ <b>' + Math.round(effectiveStock(it)) + esc(it.unit) + '</b></span>' +
-      '<span class="kpi"><b>' + fmtDays(days) + '</b> days left</span>' +
-      '<span class="kpi">runs out ~<b>' + fmtDate(runOutDate(it)) + '</b></span>' +
-      (isTriggered(it) && lane !== 'STOP' ? '<span class="kpi"><b>in today’s digest</b></span>' : '') +
-      '</div>'
-    : '<div class="kpis"><span class="kpi">Bought fresh as needed — not stock-tracked</span></div>';
+  const kpis = !tracked
+    ? '<div class="kpis"><span class="kpi">Bought fresh as needed — not stock-tracked</span></div>'
+    : dailyConsumption(it) <= 0
+      ? '<div class="kpis"><span class="kpi">Not tracking yet — tap <b>Edit</b> to add how much the house uses</span></div>'
+      : '<div class="kpis">' +
+        '<span class="kpi">Stock ≈ <b>' + Math.round(effectiveStock(it)) + esc(it.unit) + '</b></span>' +
+        '<span class="kpi"><b>' + fmtDays(days) + '</b> days left</span>' +
+        '<span class="kpi">runs out ~<b>' + fmtDate(runOutDate(it)) + '</b></span>' +
+        (isTriggered(it) && lane !== 'STOP' ? '<span class="kpi"><b>in today’s digest</b></span>' : '') +
+        '</div>';
   return '<div class="card" data-item-card="' + it.id + '">' +
-    '<div class="row"><div><h3>' + esc(it.item) + (it.seed ? ' <span class="chip ex">example</span>' : '') + badge + '</h3>' +
+    '<div class="row"><div><h3>' + esc(it.item) + (it.hindi ? ' <span class="hindi">' + esc(it.hindi) + '</span>' : '') + (it.seed ? ' <span class="chip ex">example</span>' : '') + badge + '</h3>' +
     '<span class="sub">' + esc(it.vendor) + (it.known_good_source ? ' · ' + esc(it.known_good_source) : '') + '</span></div>' + stockChip + '</div>' +
     kpis +
     (it.replenish_note ? '<p class="why">♻︎ ' + esc(it.replenish_note) + '</p>' : '') +
@@ -1119,8 +1133,14 @@ function renderItemsView(state) {
   tops.forEach(top => {
     const inTop = vetted.filter(i => { const t = catTopOf(state, i.category); return t && t.id === top.id; });
     if (!inTop.length) return;
-    repoHtml += '<div class="group-h">' + esc(top.name) + (top.tracked === false ? ' · day-to-day' : '') + '</div>' +
-      inTop.map(it => renderItemCard(state, it)).join('');
+    repoHtml += '<div class="group-h">' + esc(top.name) + (top.tracked === false ? ' · day-to-day' : '') + '</div>';
+    repoHtml += inTop.filter(i => i.category === top.id).map(it => renderItemCard(state, it)).join('');
+    // items filed under a subcategory get their own small subheader
+    (state.categories || []).filter(c => c.parent === top.id).forEach(sub => {
+      const inSub = inTop.filter(i => i.category === sub.id);
+      if (!inSub.length) return;
+      repoHtml += '<div class="sub-h">' + esc(sub.name) + '</div>' + inSub.map(it => renderItemCard(state, it)).join('');
+    });
   });
   const orphans = vetted.filter(i => !catTopOf(state, i.category));
   if (orphans.length) repoHtml += '<div class="group-h">Uncategorised</div>' + orphans.map(it => renderItemCard(state, it)).join('');
@@ -1322,7 +1342,7 @@ function openItemDialog(state, itemId, hint) {
   form.elements.category.innerHTML = catOptionsHTML(state, it ? it.category : 'grains-legumes-pulses');
   const set = (n, v) => { if (form.elements[n]) form.elements[n].value = v == null ? '' : v; };
   if (it) {
-    set('id', it.id); set('item', it.item); set('category', it.category);
+    set('id', it.id); set('item', it.item); set('hindi', it.hindi); set('category', it.category);
     set('qty_per_person_per_day', it.qty_per_person_per_day); set('unit', it.unit);
     set('people_served', it.people_served); set('frequency', it.frequency);
     set('current_stock', it.current_stock); set('reserve_units', it.reserve_units);
@@ -1459,7 +1479,7 @@ document.getElementById('itemForm').addEventListener('submit', (ev) => {
   const form = ev.target;
   if (!form.elements.item.value.trim()) { ev.preventDefault(); form.elements.item.focus(); return; }
   const data = {};
-  ['id','item','category','qty_per_person_per_day','unit','people_served','frequency',
+  ['id','item','hindi','category','qty_per_person_per_day','unit','people_served','frequency',
    'current_stock','reserve_units','backstock_target','unit_size','storage_ceiling','vendor','known_good_source',
    'usual_order_qty','vendor_lead_time_days','buffer_days','price','price_ceiling',
    'payment_mode','payment_owner','replenish_note','blacklist_reason'].forEach(n => data[n] = form.elements[n].value);
@@ -1610,6 +1630,12 @@ function runSelfTest() {
   ok('CSV import derives defaults', !!st4.items[0] && st4.items[0].usual_order_qty === 1000 && st4.items[0].storage_ceiling === 2000);
   const reImp = importItemsCSV(st4, csv);
   ok('CSV re-import dedups on vendor-item pair', reImp.added === 0 && st4.items.length === 1);
+  const st6 = testState();
+  importItemsCSV(st6, 'item,hindi,category,vendor,unit\nHaldi powder,Haldi,Spices legumes & pulses,Satopradhan,g'.replace('legumes & pulses','teas & herbs'));
+  ok('CSV maps a dedicated hindi column', st6.items[0] && st6.items[0].hindi === 'Haldi' && st6.items[0].item === 'Haldi powder');
+  const st7 = testState();
+  const withH = upsertItemFromForm(st7, { item: 'Jeera', hindi: 'Cumin', category: 'spices-teas-herbs', qty_per_person_per_day: '', unit: 'g', people_served: '5', frequency: '', current_stock: '', reserve_units: '', backstock_target: '', unit_size: '', storage_ceiling: '', vendor: '', known_good_source: '', usual_order_qty: '', vendor_lead_time_days: '', buffer_days: '', price: '', price_ceiling: '', payment_mode: 'UPI', payment_owner: 'R', replenish_note: '', blacklist_reason: '', blacklist_flag: false });
+  ok('form round-trips the hindi field', withH.hindi === 'Cumin');
   /* fraction + quick add */
   const st2 = testState();
   const it3 = Object.assign(base(), { id: uid(), storage_ceiling: 800 });
@@ -1619,6 +1645,15 @@ function runSelfTest() {
   const qa = quickAdd(st2, { item: 'Pista', category: 'nuts-dried-fruits-seeds', vendor: 'Amazon', pack: '250', unit: 'g', daily: '25' });
   ok('quick add derives fields', qa.usual_order_qty === 250 && qa.storage_ceiling === 500 && dailyConsumption(qa) === 25);
   ok('local mode queues nothing', st2.outbox.length === 0);
+  // v2.2: refined category tree + un-activated catalogue items
+  const dc = defaultCategories();
+  ok('default tree has pickles top-level (tracked)', !!dc.find(c => c.id === 'pickles-probiotics' && !c.parent && c.tracked));
+  ok('default tree has mushrooms + teas subs', !!dc.find(c => c.id === 'fruits-vegetables--mushrooms' && c.parent === 'fruits-vegetables') && !!dc.find(c => c.id === 'spices-teas-herbs--teas' && c.parent === 'spices-teas-herbs'));
+  const st5 = testState();
+  const cat = blankItem({ id: uid(), item: 'Ajwain', category: 'spices-teas-herbs', qty_per_person_per_day: 0, current_stock: 0 });
+  st5.items = [cat];
+  ok('un-activated catalogue item is tracked-category but not in digest', isTrackedItem(st5, cat) && buildDigestLines(st5).length === 0);
+  ok('un-activated item has zero daily consumption', dailyConsumption(cat) === 0);
   mode = savedMode;
   const failed = results.filter(r => r.startsWith('FAIL'));
   console.log('Home OS v2.1 self-test:\n' + results.join('\n'));
